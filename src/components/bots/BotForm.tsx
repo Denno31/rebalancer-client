@@ -201,13 +201,7 @@ export default function BotForm() {
       setTimeout(() => {
         router.push('/dashboard');
       }, 2000);
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(processedData),
-      // });
-      
-      // Mock successful API response
-      // const data = await response.json();
+
       
       console.log('Form submitted with:', processedData);
       
