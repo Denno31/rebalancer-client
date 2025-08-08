@@ -161,6 +161,19 @@ export async function fetchBots(): Promise<Bot[]> {
   return handleResponse(response);
 }
 
+// Fetch a single bot by ID
+export async function getBot(botId: number): Promise<Bot> {
+  const response = await fetch(`${API_URL}/api/bots/${botId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    }
+  });
+  
+  return handleResponse(response);
+}
+
 // Fetch accounts from 3Commas
 export async function fetchAccounts() {
   console.log('in account')
