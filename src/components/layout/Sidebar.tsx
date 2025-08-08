@@ -3,13 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Bot } from '@/utils/api';
+import { Bot } from '@/types/botTypes';
 
 
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  botList?: Bot[];
+  botList?: (Bot & { status?: string })[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 

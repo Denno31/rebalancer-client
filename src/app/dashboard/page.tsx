@@ -16,6 +16,11 @@ import {
 } from 'chart.js';
 import { Line, Doughnut } from 'react-chartjs-2';
 
+// Import types
+import { Bot } from '@/types/botTypes';
+import { Trade } from '@/types/tradeTypes';
+import { AssetAllocation } from '@/types/botAssetTypes';
+
 // Register Chart.js components
 ChartJS.register(
   CategoryScale, 
@@ -28,14 +33,21 @@ ChartJS.register(
   Legend
 );
 
-// Types
-interface Bot {
+// Extended types for dashboard usage
+interface DashboardBot extends Partial<Bot> {
   id: number;
   name: string;
-  status: string;
-  enabled?: boolean;
-  trades?: any[];
+  enabled: boolean;
+  coins: string;
+  currentCoin: string | null;
+  status?: string;
   performance?: number;
+  trades?: DashboardTrade[];
+  budget?: number; // Allow budget property for dashboard display
+  exchange?: string; // Allow exchange property for dashboard display
+  thresholdPercentage?: number;
+  checkInterval?: number;
+  initialCoin?: string;
 }
 
 interface Asset {
@@ -45,15 +57,39 @@ interface Asset {
   botId?: number;
 }
 
-interface Trade {
-  id: number;
-  botId: number;
+interface DashboardTrade extends Trade {
+  profit?: number;
+  profitPercentage?: number;
   botName?: string;
-  fromCoin: string;
-  toCoin: string;
-  amount: number;
-  timestamp: Date;
-  type: string;
+  timestamp?: Date;
+  type?: string;
+  amount?: number;
+  executed?: string; // Backward compatibility
+}
+
+// Utility function for formatting time differences
+function formatTimeDifference(timestamp: Date | string | undefined): string {
+  if (!timestamp) return 'Unknown';
+  
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (isNaN(date.getTime())) return 'Invalid date';
+  
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHours = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays > 0) {
+    return `${diffDays}d ago`;
+  } else if (diffHours > 0) {
+    return `${diffHours}h ago`;
+  } else if (diffMin > 0) {
+    return `${diffMin}m ago`;
+  } else {
+    return 'Just now';
+  }
 }
 
 // Dashboard page component
@@ -68,14 +104,14 @@ export default function DashboardPage() {
 // Separate component for dashboard content
 function DashboardContent() {
   // State
-  const [bots, setBots] = useState<Bot[]>([]);
+  const [bots, setBots] = useState<DashboardBot[]>([]);
   const [prices, setPrices] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [portfolioValue, setPortfolioValue] = useState<number>(0);
   const [portfolioChange, setPortfolioChange] = useState<number>(0);
   const [activeBots, setActiveBots] = useState<number>(0);
   const [totalTrades, setTotalTrades] = useState<number>(0);
-  const [recentActivity, setRecentActivity] = useState<Trade[]>([]);
+  const [recentActivity, setRecentActivity] = useState<DashboardTrade[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
@@ -97,7 +133,7 @@ function DashboardContent() {
       // Initialize an empty prices object
       let allPricesData: Record<string, number> = {};
       let allAssetsData: Asset[] = [];
-      let allRecentActivity: Trade[] = [];
+      let allRecentActivity: DashboardTrade[] = []; // Use DashboardTrade which includes timestamp
       
       // Fetch prices, assets, and trades for each bot if there are bots available
       if (botsData && botsData.length > 0) {
@@ -136,18 +172,23 @@ function DashboardContent() {
           if (botTrades && botTrades.length) {
             const botName = botsData[index].name;
             const botId = botsData[index].id;
+            // Convert trade to DashboardTrade with timestamp
             const tradesWithBotInfo = botTrades.map(trade => ({
               ...trade,
               botName,
               botId,
-              timestamp: new Date(trade.timestamp || Date.now())
+              timestamp: new Date(trade.executed || trade.executedAt || Date.now())
             }));
             allRecentActivity = [...allRecentActivity, ...tradesWithBotInfo];
           }
         });
         
         // Sort recent activity by timestamp (newest first)
-        allRecentActivity.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+        allRecentActivity.sort((a, b) => {
+          const timeA = a.timestamp instanceof Date ? a.timestamp.getTime() : new Date(a.executedAt).getTime();
+          const timeB = b.timestamp instanceof Date ? b.timestamp.getTime() : new Date(b.executedAt).getTime();
+          return timeB - timeA;
+        });
         
         // Limit to the most recent 10 activities
         allRecentActivity = allRecentActivity.slice(0, 10);
@@ -180,7 +221,7 @@ function DashboardContent() {
     }
   };
   
-  const calculatePortfolioStats = (botsData: Bot[], pricesData: Record<string, number>, assetsData: Asset[] = []) => {
+  const calculatePortfolioStats = (botsData: DashboardBot[], pricesData: Record<string, number>, assetsData: Asset[] = []) => {
     // Calculate total portfolio value
     let total = 0;
     
@@ -206,16 +247,75 @@ function DashboardContent() {
   };
 
   // Mock API functions - these would connect to your backend
-  const fetchBots = async (): Promise<Bot[]> => {
+  const fetchBots = async (): Promise<DashboardBot[]> => {
     // Mock API call - in a real app, this would call your backend API
     return new Promise(resolve => {
       setTimeout(() => {
-        resolve([
-          { id: 1, name: 'ETH Bot', status: 'active', enabled: true, performance: 3.2 },
-          { id: 2, name: 'BTC Bot', status: 'active', enabled: true, performance: 5.1 },
-          { id: 3, name: 'DOT Bot', status: 'paused', enabled: false, performance: -1.3 },
-          { id: 4, name: 'BNB Bot', status: 'active', enabled: true, performance: 2.7 }
-        ]);
+        // Create mock bots with all required properties from Bot type
+        const mockBots: DashboardBot[] = [
+          { 
+            id: 1, 
+            name: 'ETH Bot', 
+            status: 'active', 
+            enabled: true, 
+            performance: 3.2,
+            // Required Bot properties
+            coins: 'ETH,USDT',
+            thresholdPercentage: 5,
+            checkInterval: 10,
+            initialCoin: 'ETH',
+            budget: 1000,
+            currentCoin: 'ETH',
+            exchange: 'binance'
+          },
+          { 
+            id: 2, 
+            name: 'BTC Bot', 
+            status: 'active', 
+            enabled: true, 
+            performance: 5.1,
+            // Required Bot properties
+            coins: 'BTC,USDT',
+            thresholdPercentage: 5,
+            checkInterval: 10,
+            initialCoin: 'BTC',
+            budget: 1000,
+            currentCoin: 'BTC',
+            exchange: 'binance'
+          },
+          { 
+            id: 3, 
+            name: 'DOT Bot', 
+            status: 'paused', 
+            enabled: false, 
+            performance: -1.3,
+            // Required Bot properties
+            coins: 'DOT,USDT',
+            thresholdPercentage: 5,
+            checkInterval: 10,
+            initialCoin: 'DOT',
+            budget: 1000,
+            currentCoin: 'DOT',
+            exchange: 'binance'
+          },
+          { 
+            id: 4, 
+            name: 'BNB Bot', 
+            status: 'active', 
+            enabled: true, 
+            performance: 2.7,
+            // Required Bot properties
+            coins: 'BNB,USDT',
+            thresholdPercentage: 5,
+            checkInterval: 10,
+            initialCoin: 'BNB',
+            budget: 1000,
+            currentCoin: 'BNB',
+            exchange: 'binance'
+          }
+        ];
+        
+        resolve(mockBots);
       }, 300);
     });
   };
@@ -248,20 +348,39 @@ function DashboardContent() {
     });
   };
   
-  const fetchBotTrades = async (botId: number, limit: number, page: number): Promise<Trade[]> => {
+  const fetchBotTrades = async (botId: number, limit: number, page: number): Promise<DashboardTrade[]> => {
     // Mock API call
     return new Promise(resolve => {
       setTimeout(() => {
         const coins = ['ETH', 'BTC', 'DOT', 'BNB', 'USDT', 'USDC'];
-        const trades = Array(Math.floor(Math.random() * limit)).fill(null).map((_, i) => ({
-          id: botId * 100 + i,
-          botId,
-          fromCoin: coins[Math.floor(Math.random() * coins.length)],
-          toCoin: coins[Math.floor(Math.random() * coins.length)],
-          amount: Math.random() * 1000,
-          timestamp: new Date(Date.now() - Math.floor(Math.random() * 86400000 * 7)), // Random time in the last week
-          type: Math.random() > 0.5 ? 'buy' : 'sell'
-        }));
+        const trades: DashboardTrade[] = Array(Math.floor(Math.random() * limit) + 1).fill(null).map((_, i) => {
+          // Create timestamp for both dashboard and trade interface
+          const tradeTimestamp = new Date(Date.now() - Math.floor(Math.random() * 86400000 * 7));
+          
+          return {
+            // Required Trade properties from Trade interface
+            id: botId * 100 + i,
+            tradeId: `trade-${botId}-${i}`,
+            botId,
+            fromCoin: coins[Math.floor(Math.random() * coins.length)],
+            toCoin: coins[Math.floor(Math.random() * coins.length)],
+            fromAmount: Math.random() * 1000,
+            toAmount: Math.random() * 1000,
+            fromPrice: Math.random() * 100,
+            toPrice: Math.random() * 100,
+            status: 'completed',
+            executedAt: tradeTimestamp.toISOString(),
+            
+            // Dashboard-specific properties
+            timestamp: tradeTimestamp,
+            type: Math.random() > 0.5 ? 'buy' : 'sell',
+            amount: Math.random() * 1000,
+            botName: `Bot ${botId}`,
+            executed: tradeTimestamp.toISOString(), // Duplicate for backward compatibility
+            profit: Math.random() * 200 - 100,
+            profitPercentage: Math.random() * 10 - 5
+          };
+        });
         resolve(trades);
       }, 200);
     });
@@ -475,7 +594,18 @@ function DashboardContent() {
 
   return (
     <div className="dashboard-container p-4">
-      <h1 className="text-2xl font-semibold text-white mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
+        <a 
+          href="/bots/create" 
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center space-x-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+          </svg>
+          <span>Create Bot</span>
+        </a>
+      </div>
       
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -561,7 +691,7 @@ function DashboardContent() {
                       </span>
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-300">
-                      ${activity.amount.toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                      ${activity.amount ? activity.amount.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-400">
                       {formatTimeDifference(activity.timestamp)}

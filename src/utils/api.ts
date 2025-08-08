@@ -1,4 +1,9 @@
 import { API_URL } from './config';
+import { Bot as BotType } from '@/types/botTypes';
+import { User, UserLogin, UserRegistration, ResetPasswordRequest, ResetPasswordConfirm } from '@/types/userTypes';
+
+// Re-export the Bot type for backward compatibility
+export type Bot = BotType;
 
 // Type definitions
 export interface LoginResponse {
@@ -141,18 +146,7 @@ export async function validateResetToken(token: string): Promise<{ valid: boolea
   }
 }
 
-// Bot data types
-export interface Bot {
-  id: number;
-  name: string;
-  status: string;
-  currentCoin?: string;
-  accountId?: number;
-  preferredStablecoin?: string;
-  budget?: number;
-  created?: string;
-  lastTraded?: string;
-}
+// Bot API functions
 
 // Fetch all bots
 export async function fetchBots(): Promise<Bot[]> {
@@ -162,6 +156,61 @@ export async function fetchBots(): Promise<Bot[]> {
       'Content-Type': 'application/json',
       ...getAuthHeader()
     }
+  });
+  
+  return handleResponse(response);
+}
+
+// Fetch accounts from 3Commas
+export async function fetchAccounts() {
+  console.log('in account')
+  const response = await fetch(`${API_URL}/api/accounts`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    }
+  });
+  
+  return handleResponse(response);
+}
+
+// Fetch available coins for an account
+export async function fetchAvailableCoins(accountId: string) {
+  const response = await fetch(`${API_URL}/api/coins/accounts/${accountId}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    }
+  });
+  
+  return handleResponse(response);
+}
+
+// Create a new bot
+export async function createBot(botData: Partial<Bot>) {
+  const response = await fetch(`${API_URL}/api/bots`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
+    body: JSON.stringify(botData)
+  });
+  
+  return handleResponse(response);
+}
+
+// Update an existing bot
+export async function updateBot(botId: number, botData: Partial<Bot>) {
+  const response = await fetch(`${API_URL}/api/bots/${botId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
+    body: JSON.stringify(botData)
   });
   
   return handleResponse(response);

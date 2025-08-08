@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { usePathname } from 'next/navigation';
-import { fetchBots, Bot } from '@/utils/api';
+import { fetchBots } from '@/utils/api';
+import { Bot } from '@/types/botTypes';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -31,7 +32,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
     try {
       // Fetch actual bot data from the API
       const botsData = await fetchBots();
-      setBotList(botsData);
+      // Map API response to bots with status derived from enabled field
+      const processedBots = botsData.map(bot => ({
+        ...bot,
+        status: bot.enabled ? 'active' : 'inactive'
+      }));
+      setBotList(processedBots);
     } catch (error) {
       console.error('Error fetching bots for sidebar:', error);
       // Set empty array as fallback
