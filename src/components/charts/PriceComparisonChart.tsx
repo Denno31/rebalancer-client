@@ -1,18 +1,62 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { Card } from '../ui/Card';
-import { fetchPriceHistory, fetchBotCoins, PricePoint } from '@/utils/botApi';
+import { Button } from '../ui/Button';
+import { Alert, AlertDescription } from '../ui/Alert';
+import { Badge } from '../ui/Badge';
+import { Select } from '../ui/Select';
+import { Switch } from '../ui/Switch';
+import { fetchPriceComparison, fetchHistoricalComparison } from '@/utils/botApi';
+import { BarChartIcon, TableIcon, RefreshCw } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-interface PriceData {
-  timestamp: string;
+interface PriceComparisonData {
   coin: string;
+  initialPrice: number;
+  currentPrice: number;
+  percentChange: number;
+  snapshotTimestamp: string;
+  lastUpdated: string;
+  wasEverHeld: boolean;
+  unitsHeld: number;
+}
+
+interface PriceComparisonResponse {
+  botId: string;
+  botName: string;
+  priceComparisons: PriceComparisonData[];
+  preferredStablecoin: string;
+}
+
+interface HistoricalPrice {
+  timestamp: string;
   price: number;
+  source: string;
+  percentChange: number;
+}
+
+interface CoinHistoricalData {
+  coin: string;
+  snapshot: {
+    initialPrice: number;
+    snapshotTimestamp: string;
+    wasEverHeld: boolean;
+    unitsHeld: number;
+  };
+  prices: HistoricalPrice[];
+}
+
+interface HistoricalComparisonResponse {
+  botId: string;
+  botName: string;
+  fromTime: string;
+  toTime: string;
+  data: CoinHistoricalData[];
 }
 
 interface PriceComparisonChartProps {
@@ -22,156 +66,304 @@ interface PriceComparisonChartProps {
 const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [priceData, setPriceData] = useState<Record<string, PriceData[]>>({});
+  const [priceComparisonData, setPriceComparisonData] = useState<PriceComparisonData[]>([]);
+  const [historicalData, setHistoricalData] = useState<CoinHistoricalData[]>([]);
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('table'); // Default to table view
-  const [timeRange, setTimeRange] = useState<'1d' | '7d' | '30d' | 'all'>('7d');
+  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '12h' | '24h' | '3d' | '7d' | '30d'>('24h');
+  const [selectedCoin, setSelectedCoin] = useState<string>('all');
+  const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const chartRef = useRef<any>(null);
 
-  // Fetch price data
+  // Time range options in milliseconds - memoized to prevent recreation
+  const timeRanges = useMemo<Record<string, number>>(() => ({
+    '1h': 60 * 60 * 1000,
+    '6h': 6 * 60 * 60 * 1000,
+    '12h': 12 * 60 * 60 * 1000,
+    '24h': 24 * 60 * 60 * 1000,
+    '3d': 3 * 24 * 60 * 60 * 1000,
+    '7d': 7 * 24 * 60 * 60 * 1000,
+    '30d': 30 * 24 * 60 * 60 * 1000
+  }), []);
+
+  // Define data loading functions outside useEffect to prevent recreating them on every render
+  const loadPriceComparison = useCallback(async () => {
+    if (!botId) return;
+    
+    try {
+      const data = await fetchPriceComparison(botId) as unknown as PriceComparisonResponse;
+      // Ensure data has the expected structure
+      if (data && Array.isArray(data.priceComparisons)) {
+        setPriceComparisonData(data.priceComparisons);
+      } else {
+        setPriceComparisonData([]);
+        console.error('Invalid price comparison data format:', data);
+      }
+      setLastRefreshed(new Date());
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching price comparison:', err);
+      setError('Failed to load price comparison data');
+    }
+  }, [botId]);
+
+  // Get options for historical comparison - memoized to prevent recreation
+  const historicalOptions = useMemo(() => {
+    const options: {
+      fromTime: Date | string;
+      toTime: Date | string;
+      coin?: string;
+    } = {
+      fromTime: new Date(Date.now() - timeRanges[timeRange]),
+      toTime: new Date()
+    };
+
+    // Add coin filter if specific coin is selected
+    if (selectedCoin !== 'all') {
+      options.coin = selectedCoin;
+    }
+    
+    return options;
+  }, [selectedCoin, timeRange, timeRanges]);
+
+  const loadHistoricalComparison = useCallback(async () => {
+    if (!botId) return;
+    
+    try {
+      const response = await fetchHistoricalComparison(botId, historicalOptions) as unknown as HistoricalComparisonResponse;
+      // Ensure response has the expected structure
+      if (response && Array.isArray(response.data)) {
+        setHistoricalData(response.data);
+      } else {
+        setHistoricalData([]);
+        console.error('Invalid historical comparison data format:', response);
+      }
+      setError(null);
+    } catch (err: any) {
+      console.error('Error fetching historical comparison:', err);
+      setError('Failed to load historical price data');
+    }
+  }, [botId, historicalOptions]);
+
+  // Handle initial data loading and refreshing
   useEffect(() => {
-    const loadPriceData = async () => {
+    if (!botId) return;
+    
+    let isMounted = true;
+    
+    const loadData = async () => {
+      if (!isMounted) return;
+      setLoading(true);
+      
       try {
-        setLoading(true);
-        setError(null);
-        
-        // First fetch available coins for this bot
-        const coins = await fetchBotCoins(botId);
-        
-        if (!coins || coins.length === 0) {
-          setError('No coins available for this bot');
-          setLoading(false);
-          return;
-        }
-        
-        // Convert timeRange to API format
-        const apiTimeRange = timeRange === '1d' ? '24h' : timeRange;
-        
-        // Fetch price data for each coin
-        const priceDataMap: Record<string, PriceData[]> = {};
-        
-        // Use Promise.all to fetch price data for all coins in parallel
-        await Promise.all(coins.map(async (coin) => {
-          try {
-            const pricePoints = await fetchPriceHistory(botId, coin, apiTimeRange);
-            
-            if (pricePoints && pricePoints.length > 0) {
-              priceDataMap[coin] = pricePoints.map(point => ({
-                timestamp: point.timestamp,
-                coin: point.coin,
-                price: point.price
-              }));
-            }
-          } catch (coinErr) {
-            console.error(`Error fetching price data for ${coin}:`, coinErr);
-            // Continue with other coins even if one fails
-          }
-        }));
-        
-        setPriceData(priceDataMap);
-      } catch (err: any) {
-        console.error('Failed to fetch price data:', err);
-        setError('Failed to load price data. Please try again later.');
+        // Load both data sources in parallel
+        await Promise.all([
+          loadPriceComparison(),
+          loadHistoricalComparison()
+        ]);
+      } catch (error) {
+        // Error handling is already in loadPriceComparison and loadHistoricalComparison
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadPriceData();
-  }, [botId, timeRange]);
+    // Load initial data
+    loadData();
 
-  // Format data for Chart.js
-  const chartData = {
-    labels: Object.values(priceData)[0]?.map(item => new Date(item.timestamp).toLocaleString()) || [],
-    datasets: Object.entries(priceData).map(([coin, data], index) => {
-      const colors = [
-        { border: 'rgba(75, 192, 192, 1)', background: 'rgba(75, 192, 192, 0.2)' },
-        { border: 'rgba(255, 99, 132, 1)', background: 'rgba(255, 99, 132, 0.2)' },
-        { border: 'rgba(54, 162, 235, 1)', background: 'rgba(54, 162, 235, 0.2)' },
-        { border: 'rgba(255, 206, 86, 1)', background: 'rgba(255, 206, 86, 0.2)' },
-        { border: 'rgba(153, 102, 255, 1)', background: 'rgba(153, 102, 255, 0.2)' },
-      ];
+    // Set up auto-refresh
+    let refreshTimer: NodeJS.Timeout | null = null;
+    if (autoRefresh) {
+      refreshTimer = setInterval(loadData, 60000); // Refresh every minute
+    }
+
+    // Cleanup function
+    return () => {
+      isMounted = false;
+      if (refreshTimer) clearInterval(refreshTimer);
+
+      // Destroy chart instance when component unmounts to prevent canvas reuse errors
+      if (chartRef.current && chartRef.current.chartInstance) {
+        chartRef.current.chartInstance.destroy();
+      }
+    };
+  }, [botId, autoRefresh, loadPriceComparison, loadHistoricalComparison]);
+
+  // Utility functions
+  function formatPercentage(value: number): string {
+    if (value === null || value === undefined) return 'N/A';
+    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
+  }
+
+  function formatTimestamp(timestamp: string): string {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatPrice(price: number): string {
+    if (price === null || price === undefined) return 'N/A';
+    return `$${price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}`;
+  }
+
+  function getChangeClass(change: number): string {
+    if (change > 0) return 'text-green-500';
+    if (change < 0) return 'text-red-500';
+    return 'text-gray-500';
+  }
+
+  // Process and prepare chart data
+  const chartData = useMemo(() => {
+    if (!historicalData || historicalData.length === 0) return null;
+
+    // Extract timestamps for x-axis labels
+    const allTimestamps = new Set<string>();
+    historicalData.forEach(coin => {
+      if (!coin.prices) return;
       
+      coin.prices.forEach(price => {
+        if (price.timestamp) {
+          allTimestamps.add(price.timestamp);
+        }
+      });
+    });
+
+    const sortedTimestamps = [...allTimestamps].sort();
+
+    // Prepare datasets for each coin
+    const datasets = historicalData.map((coin, index) => {
+      // Generate a color based on index
+      const hue = (index * 137.5) % 360;
+      const color = `hsl(${hue}, 70%, 60%)`;
+
       return {
-        label: coin,
-        data: data.map(item => item.price),
-        borderColor: colors[index % colors.length].border,
-        backgroundColor: colors[index % colors.length].background,
-        borderWidth: 2,
+        label: coin.coin,
+        data: coin.prices.map(price => price.percentChange),
+        borderColor: color,
+        backgroundColor: `${color}33`, // Add 20% alpha
         tension: 0.4,
         pointRadius: 2,
+        pointHoverRadius: 5,
+        fill: false
       };
-    }),
-  };
+    });
+
+    return {
+      labels: sortedTimestamps.map(timestamp => formatTimestamp(timestamp)),
+      datasets
+    };
+  }, [historicalData]);
 
   // Chart options
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const label = context.dataset.label || '';
+            const value = context.raw !== null ? context.raw : 'N/A';
+            return `${label}: ${formatPercentage(value)}`;
+          }
+        }
+      },
+      legend: {
+        position: 'top' as const,
+        labels: {
+          usePointStyle: true,
+          padding: 20
+        }
+      },
+      title: {
+        display: true,
+        text: 'Price Movement Since Initial Snapshot',
+        font: {
+          size: 16
+        },
+        padding: {
+          top: 10,
+          bottom: 20
+        }
+      }
+    },
     scales: {
       y: {
-        beginAtZero: false,
+        beginAtZero: true,
         ticks: {
-          color: 'rgba(255, 255, 255, 0.7)',
+          callback: function(this: any, tickValue: number | string, index: number, ticks: any) {
+            // Handle the value regardless of whether it's a string or number
+            return formatPercentage(Number(tickValue));
+          }
         },
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
-        },
+        title: {
+          display: true,
+          text: 'Price Change (%)',
+          font: {
+            size: 12
+          }
+        }
       },
       x: {
         ticks: {
-          color: 'rgba(255, 255, 255, 0.7)',
           maxRotation: 45,
-          minRotation: 45,
+          minRotation: 45
         },
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
-        },
-      },
-    },
-    plugins: {
-      legend: {
-        display: true,
-        position: 'top' as const,
-        labels: {
-          color: 'rgba(255, 255, 255, 0.7)',
-        },
-      },
-      tooltip: {
-        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: 'rgba(255, 255, 255, 1)',
-        bodyColor: 'rgba(255, 255, 255, 0.8)',
-      },
-    },
+        title: {
+          display: true,
+          text: 'Time',
+          font: {
+            size: 12
+          }
+        }
+      }
+    }
   };
 
-  // Format price with currency
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 6,
-    }).format(price);
+  // Handle time range selection
+  const handleTimeRangeChange = useCallback((range: string) => {
+    setTimeRange(range as '1h' | '6h' | '12h' | '24h' | '3d' | '7d' | '30d');
+  }, []);
+
+  // Handle coin selection
+  const handleCoinChange = useCallback((coin: string) => {
+    setSelectedCoin(coin);
+  }, []);
+
+  // Toggle auto-refresh
+  const toggleAutoRefresh = () => {
+    setAutoRefresh(!autoRefresh);
   };
 
-  // Format timestamp
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+  // Toggle view mode between chart and table
+  const toggleViewMode = useCallback(() => {
+    setViewMode(prevMode => prevMode === 'chart' ? 'table' : 'chart');
+  }, []);
+
+  const toggleTableView = () => {
+    setViewMode('table');
   };
 
-  // Calculate price change percentage
-  const calculateChange = (data: PriceData[]) => {
-    if (!data || data.length < 2) return 0;
-    const first = data[0].price;
-    const last = data[data.length - 1].price;
-    return ((last - first) / first) * 100;
-  };
+  // Toggle auto-refresh handler
+  const handleAutoRefreshChange = useCallback((checked: boolean) => {
+    setAutoRefresh(checked);
+  }, []);
 
-  // Get CSS class based on price change
-  const getChangeClass = (change: number) => {
-    if (change > 0) return 'text-green-400';
-    if (change < 0) return 'text-red-400';
-    return 'text-gray-400';
-  };
+  const manualRefresh = useCallback(() => {
+    setLoading(true);
+    Promise.all([
+      loadPriceComparison(),
+      loadHistoricalComparison()
+    ]).finally(() => {
+      setLoading(false);
+    });
+  }, [loadPriceComparison, loadHistoricalComparison]);
 
   if (loading) {
     return (
@@ -183,113 +375,182 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
 
   if (error) {
     return (
-      <div className="bg-red-900/20 border border-red-800 rounded-md p-4">
-        <p className="text-red-400">{error}</p>
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap justify-between items-center gap-4">
-        <h2 className="text-xl font-bold">Price Movement</h2>
-        
-        <div className="flex items-center gap-4">
-          {/* Time range selector */}
-          <div className="inline-flex items-center bg-gray-800 rounded-md">
-            {(['1d', '7d', '30d', 'all'] as const).map(range => (
-              <button
-                key={range}
-                className={`px-3 py-1 text-sm ${timeRange === range ? 'bg-blue-600 text-white' : 'text-gray-400'} ${
-                  range === '1d' ? 'rounded-l-md' : range === 'all' ? 'rounded-r-md' : ''
-                }`}
-                onClick={() => setTimeRange(range)}
-              >
-                {range === '1d' ? '1D' : range === '7d' ? '1W' : range === '30d' ? '1M' : 'All'}
-              </button>
+    <Card className="p-4 w-full">
+      <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant={timeRange === '1h' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('1h')}
+          >
+            1H
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === '6h' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('6h')}
+          >
+            6H
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === '12h' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('12h')}
+          >
+            12H
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === '24h' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('24h')}
+          >
+            24H
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === '3d' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('3d')}
+          >
+            3D
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === '7d' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('7d')}
+          >
+            7D
+          </Button>
+          <Button
+            size="sm"
+            variant={timeRange === '30d' ? 'default' : 'outline'}
+            onClick={() => handleTimeRangeChange('30d')}
+          >
+            30D
+          </Button>
+        </div>
+
+        <div className="flex-1 w-full sm:w-auto">
+          <Select
+            value={selectedCoin}
+            onChange={(e) => handleCoinChange(e.target.value)}
+          >
+            <option value="all">All Coins</option>
+            {priceComparisonData.map((coin) => (
+              <option key={coin.coin} value={coin.coin}>
+                {coin.coin}
+              </option>
             ))}
+          </Select>
+        </div>
+
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="autoRefresh"
+              checked={autoRefresh}
+              onCheckedChange={handleAutoRefreshChange}
+            />
+            <label htmlFor="autoRefresh" className="text-sm">
+              Auto-refresh
+            </label>
           </div>
-          
-          {/* View mode selector */}
-          <div className="inline-flex items-center bg-gray-800 rounded-md">
-            <button
-              className={`px-3 py-1 text-sm rounded-l-md ${viewMode === 'table' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}
-              onClick={() => setViewMode('table')}
+
+          <Button size="sm" variant="outline" onClick={manualRefresh}>
+            <RefreshCw size={16} className="mr-1" />
+            Refresh
+          </Button>
+
+          <div className="flex border rounded-md overflow-hidden">
+            <Button
+              size="sm"
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              className="px-2 rounded-none"
+              onClick={toggleTableView}
             >
+              <TableIcon size={16} className="mr-1" />
               Table
-            </button>
-            <button
-              className={`px-3 py-1 text-sm rounded-r-md ${viewMode === 'chart' ? 'bg-blue-600 text-white' : 'text-gray-400'}`}
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'chart' ? 'default' : 'ghost'}
+              className="px-2 rounded-none"
               onClick={() => setViewMode('chart')}
             >
+              <BarChartIcon size={16} className="mr-1" />
               Chart
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      {viewMode === 'chart' ? (
+      {lastRefreshed && (
+        <div className="text-xs text-muted-foreground mb-4">
+          Last updated: {lastRefreshed.toLocaleTimeString()}
+        </div>
+      )}
+
+      {viewMode === 'chart' && chartData ? (
         <div className="h-96 w-full">
           <Line data={chartData} options={chartOptions} />
         </div>
       ) : (
         <div className="space-y-6">
-          {/* Price summary cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {Object.entries(priceData).map(([coin, data]) => {
-              const change = calculateChange(data);
-              const latestPrice = data[data.length - 1]?.price || 0;
-              
-              return (
-                <div key={coin} className="bg-gray-800 rounded-md p-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-bold text-white">{coin}</h3>
-                    <div className={`${getChangeClass(change)}`}>
-                      {change > 0 ? '+' : ''}{change.toFixed(2)}%
-                    </div>
-                  </div>
-                  <div className="text-xl font-medium">{formatPrice(latestPrice)}</div>
-                  <div className="text-xs text-gray-400 mt-2">
-                    Last updated: {formatTimestamp(data[data.length - 1]?.timestamp || '')}
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {priceComparisonData.map((coin) => (
+              <div key={coin.coin} className="bg-card border rounded-lg p-4 shadow-sm">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-semibold">{coin.coin}</h3>
+                  <Badge variant={coin.percentChange >= 0 ? 'outline' : 'destructive'} className={coin.percentChange >= 0 ? 'bg-green-900/20 text-green-400 border-green-800' : ''}>
+                    {formatPercentage(coin.percentChange)}
+                  </Badge>
                 </div>
-              );
-            })}
+                <div className="text-2xl font-medium">{formatPrice(coin.currentPrice)}</div>
+                <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                  <span>Initial: {formatPrice(coin.initialPrice)}</span>
+                  <span>{new Date(coin.snapshotTimestamp).toLocaleDateString()}</span>
+                </div>
+              </div>
+            ))}
           </div>
-          
-          {/* Price data table */}
+
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="py-3 px-4 text-gray-400 font-medium">Time</th>
-                  {Object.keys(priceData).map(coin => (
-                    <th key={coin} className="py-3 px-4 text-gray-400 font-medium">{coin} Price</th>
-                  ))}
+                <tr className="border-b">
+                  <th className="py-2 px-4 text-left">Coin</th>
+                  <th className="py-2 px-4 text-left">Initial Price</th>
+                  <th className="py-2 px-4 text-left">Current Price</th>
+                  <th className="py-2 px-4 text-right">Change</th>
+                  <th className="py-2 px-4 text-right">Snapshot Date</th>
                 </tr>
               </thead>
               <tbody>
-                {Object.values(priceData)[0]?.map((_, rowIndex) => {
-                  // Use first coin's timestamps for the rows
-                  const timestamp = Object.values(priceData)[0][rowIndex].timestamp;
-                  
-                  return (
-                    <tr key={rowIndex} className="border-b border-gray-800">
-                      <td className="py-3 px-4">{formatTimestamp(timestamp)}</td>
-                      {Object.entries(priceData).map(([coin, data]) => (
-                        <td key={coin} className="py-3 px-4">
-                          {formatPrice(data[rowIndex]?.price || 0)}
-                        </td>
-                      ))}
-                    </tr>
-                  );
-                })}
+                {priceComparisonData.map((coin) => (
+                  <tr key={coin.coin} className="border-b hover:bg-muted/50">
+                    <td className="py-2 px-4 font-medium">{coin.coin}</td>
+                    <td className="py-2 px-4">{formatPrice(coin.initialPrice)}</td>
+                    <td className="py-2 px-4">{formatPrice(coin.currentPrice)}</td>
+                    <td className={`py-2 px-4 text-right ${getChangeClass(coin.percentChange)}`}>
+                      {formatPercentage(coin.percentChange)}
+                    </td>
+                    <td className="py-2 px-4 text-right text-muted-foreground">
+                      {new Date(coin.snapshotTimestamp).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

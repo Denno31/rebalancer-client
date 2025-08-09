@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { Card } from '../ui/Card';
@@ -21,6 +21,10 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
   const [timeRange, setTimeRange] = useState<string>('24h'); // Default to 24 hours
   const [selectedPair, setSelectedPair] = useState<string | null>(null);
   const [baseCoin, setBaseCoin] = useState<string>('');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
 
   // Fetch deviation data
   useEffect(() => {
@@ -32,7 +36,13 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
         const options: {
           timeRange?: string;
           baseCoin?: string;
-        } = { timeRange };
+          page?: number;
+          limit?: number;
+        } = { 
+          timeRange,
+          page: currentPage,
+          limit: rowsPerPage
+        };
         
         if (baseCoin) {
           options.baseCoin = baseCoin;
@@ -54,19 +64,45 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
     };
     
     loadDeviationData();
-  }, [botId, timeRange, baseCoin]);
+  }, [botId, timeRange, baseCoin, currentPage, rowsPerPage]);
 
   // Get all available pair keys from timeSeriesData
   const availablePairs = deviationData?.success ? Object.keys(deviationData.timeSeriesData || {}) : [];
 
-  // Select data for the selected pair
-  const selectedPairData = selectedPair && deviationData?.success 
+  // Get data for the selected pair
+  const selectedPairData = selectedPair && deviationData && deviationData.timeSeriesData
     ? deviationData.timeSeriesData[selectedPair] || []
     : [];
+  
+  // For server-side pagination
+  const totalItems = deviationData?.totalCount || selectedPairData.length;
+  
+  // Calculate pagination variables - use API provided count for server-side pagination when available
+  const totalPages = useMemo(() => {
+    if (deviationData?.totalCount !== undefined) {
+      // Server-side pagination
+      return Math.max(1, Math.ceil(deviationData.totalCount / rowsPerPage));
+    } else {
+      // Fallback to client-side pagination
+      return Math.max(1, Math.ceil(selectedPairData.length / rowsPerPage));
+    }
+  }, [deviationData?.totalCount, selectedPairData.length, rowsPerPage]);
+  
+  // Use the data directly from API for server-side pagination, otherwise slice locally
+  const paginatedData = useMemo(() => {
+    // If server is already paginating the data, use it directly
+    if (deviationData?.page !== undefined && deviationData?.limit !== undefined) {
+      return selectedPairData;
+    } else {
+      // Fallback to client-side pagination
+      const startIndex = (currentPage - 1) * rowsPerPage;
+      return selectedPairData.slice(startIndex, startIndex + rowsPerPage);
+    }
+  }, [selectedPairData, currentPage, rowsPerPage, deviationData?.page, deviationData?.limit]);
 
   // Format data for Chart.js
   const chartData = {
-    labels: selectedPairData.map(item => new Date(item.timestamp).toLocaleTimeString()),
+    labels: paginatedData.map(item => new Date(item.timestamp).toLocaleTimeString()),
     datasets: [
       {
         label: `${selectedPair || ''} Deviation %`,
@@ -151,7 +187,13 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
   // Handle coin pair selection
   const handlePairSelection = (pair: string) => {
     setSelectedPair(pair);
+    setCurrentPage(1); // Reset to first page when changing pairs
   };
+  
+  // Reset page when changing time range
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timeRange]);
 
   if (loading) {
     return (
@@ -261,7 +303,8 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
             </thead>
             <tbody>
               {selectedPairData.length > 0 ? (
-                selectedPairData.map((item, index) => (
+                // Apply pagination to the data
+                paginatedData.map((item, index) => (
                   <tr key={index} className="border-b border-gray-800">
                     <td className="py-3 px-4">{formatTimestamp(item.timestamp)}</td>
                     <td className="py-3 px-4">{`${item.baseCoin}/${item.targetCoin}`}</td>
@@ -281,6 +324,56 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
               )}
             </tbody>
           </table>
+          
+          {/* Pagination Controls */}
+          {selectedPairData.length > 0 && (
+            <div className="flex justify-between items-center mt-4 px-4">
+              <div className="text-sm text-gray-400">
+                {/* For server-side pagination, use totalItems, otherwise use local data length */}
+                Showing {paginatedData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {Math.min(currentPage * rowsPerPage, totalItems)} of {totalItems} entries
+              </div>
+              <div className="flex items-center space-x-2">
+                <select 
+                  className="bg-gray-800 border border-gray-700 text-white text-sm rounded-md px-2 py-1"
+                  value={rowsPerPage}
+                  onChange={(e) => {
+                    setRowsPerPage(Number(e.target.value));
+                    setCurrentPage(1); // Reset to first page when changing rows per page
+                  }}
+                >
+                  <option value="5">5 rows</option>
+                  <option value="10">10 rows</option>
+                  <option value="25">25 rows</option>
+                  <option value="50">50 rows</option>
+                  <option value="100">100 rows</option>
+                </select>
+                
+                <div className="flex items-center space-x-1">
+                  <button
+                    className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                  >
+                    Previous
+                  </button>
+                  
+                  <div className="flex items-center px-2 py-1 bg-gray-800 rounded-md">
+                    <span className="text-white">{currentPage}</span>
+                    <span className="text-gray-400 mx-1">of</span>
+                    <span className="text-white">{totalPages}</span>
+                  </div>
+                  
+                  <button
+                    className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import { fetchSwapDecisions, SwapDecision } from '@/utils/botApi';
+import { fetchSwapDecisions, SwapDecision, SwapDecisionsResponse } from '@/utils/botApi';
 
 // Using SwapDecision interface from botApi.ts
 
@@ -26,10 +26,10 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
         setError(null);
         
         const numericBotId = typeof botId === 'string' ? parseInt(botId, 10) : botId;
-        const { data, count } = await fetchSwapDecisions(numericBotId, page, pageSize);
+        const response = await fetchSwapDecisions(numericBotId, page, pageSize);
         
-        setSwaps(data);
-        setTotalCount(count);
+        setSwaps(response.items || []);
+        setTotalCount(response.total || 0);
       } catch (err: any) {
         console.error('Failed to fetch swap decisions:', err);
         setError('Failed to load swap decisions. Please try again later.');
@@ -45,16 +45,24 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
     setPage(newPage);
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'COMPLETED':
-        return <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-800">Completed</Badge>;
-      case 'PENDING':
-        return <Badge variant="outline" className="bg-yellow-900/20 text-yellow-400 border-yellow-800">Pending</Badge>;
-      case 'FAILED':
-        return <Badge variant="destructive">Failed</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  const getDeviationBadge = (deviation: number, triggered: boolean) => {
+    // Format deviation as percentage with 2 decimal places
+    const deviationStr = `${(deviation * 100).toFixed(2)}%`;
+    
+    if (triggered) {
+      return <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-800">{deviationStr}</Badge>;
+    } else if (deviation > 0) {
+      return <Badge variant="outline" className="bg-blue-900/20 text-blue-400 border-blue-800">{deviationStr}</Badge>;
+    } else {
+      return <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-800">{deviationStr}</Badge>;
+    }
+  };
+  
+  const getSwapStatusBadge = (swapPerformed: boolean) => {
+    if (swapPerformed) {
+      return <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-800">Swapped</Badge>;
+    } else {
+      return <Badge variant="outline" className="bg-gray-900/20 text-gray-400 border-gray-800">No Swap</Badge>;
     }
   };
 
@@ -107,38 +115,44 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
       ) : (
         <>
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="min-w-full bg-gray-900 divide-y divide-gray-800">
               <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="py-3 px-4 text-gray-400 font-medium">Time</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">From</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">To</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Amount</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Received</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Rate</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Fee</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Reason</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Status</th>
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">From</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">To</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Price Deviation</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Threshold</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Unit Gain %</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Swap Status</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Reason</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Details</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-800">
                 {swaps.map((swap) => (
                   <tr key={swap.id} className="border-b border-gray-800">
-                    <td className="py-3 px-4">{formatTimestamp(swap.timestamp)}</td>
+                    <td className="py-3 px-4">{swap.id}</td>
+                    <td className="py-3 px-4">{formatTimestamp(swap.createdAt)}</td>
                     <td className="py-3 px-4">{swap.fromCoin}</td>
                     <td className="py-3 px-4">{swap.toCoin}</td>
-                    <td className="py-3 px-4">{formatCryptoAmount(swap.fromAmount, swap.fromCoin)}</td>
-                    <td className="py-3 px-4">{formatCryptoAmount(swap.toAmount, swap.toCoin)}</td>
-                    <td className="py-3 px-4">{formatCurrency(swap.exchangeRate)}</td>
-                    <td className="py-3 px-4">{swap.fee ? formatCurrency(swap.fee) : 'N/A'}</td>
+                    <td className="py-3 px-4">{getDeviationBadge(swap.priceDeviationPercent, swap.deviationTriggered)}</td>
+                    <td className="py-3 px-4">{(swap.priceThreshold * 100).toFixed(2)}%</td>
+                    <td className="py-3 px-4">{(swap.unitGainPercent * 100).toFixed(2)}%</td>
+                    <td className="py-3 px-4">{getSwapStatusBadge(swap.swapPerformed)}</td>
                     <td className="py-3 px-4">{swap.reason}</td>
                     <td className="py-3 px-4">
-                      {getStatusBadge(swap.status)}
-                      {swap.transactionId && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          TX: {swap.transactionId.substring(0, 6)}...
-                        </div>
-                      )}
+                      <div className="text-xs">
+                        {swap.tradeId ? (
+                          <span className="text-blue-400">Trade ID: {swap.tradeId}</span>
+                        ) : (
+                          <span className="text-gray-400">No trade performed</span>
+                        )}
+                      </div>
+                      <div className="text-xs mt-1">
+                        <span className="text-gray-400">ETH Value: {formatCurrency(swap.ethEquivalentValue)}</span>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -173,6 +187,7 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
                 Previous
               </button>
               
+              {/* Show page numbers, calculate total pages from totalCount */}
               {Array.from({ length: Math.min(5, Math.ceil(totalCount / pageSize)) }, (_, i) => {
                 const pageNum = i + 1;
                 return (
@@ -192,9 +207,9 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
               
               <button
                 onClick={() => handlePageChange(page + 1)}
-                disabled={page >= Math.ceil(totalCount / pageSize)}
+                disabled={page * pageSize >= totalCount}
                 className={`px-3 py-2 rounded-md text-sm ${
-                  page >= Math.ceil(totalCount / pageSize)
+                  page * pageSize >= totalCount 
                     ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
                     : 'bg-gray-700 text-white hover:bg-gray-600'
                 }`}

@@ -338,6 +338,7 @@ export default function BotDetailPage() {
                 { id: 'deviation', label: 'Deviation Chart', icon: 'bi bi-graph-up' },
                 { id: 'price-movement', label: 'Price Movement', icon: 'bi bi-graph-up-arrow' },
                 { id: 'trades', label: 'Trade History', icon: 'bi bi-clock-history' },
+                { id: 'swap-decisions', label: 'Swap Decisions', icon: 'bi bi-arrow-left-right' },
                 { id: 'logs', label: 'Logs', icon: 'bi bi-journal-text' },
               ].map((tab) => (
                 <button

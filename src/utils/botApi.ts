@@ -52,17 +52,27 @@ export interface TradeDecision {
 
 export interface SwapDecision {
   id: number;
-  timestamp: string;
   botId: number;
   fromCoin: string;
   toCoin: string;
-  fromAmount: number;
-  toAmount: number;
-  exchangeRate: number;
-  fee?: number;
-  status: 'PENDING' | 'COMPLETED' | 'FAILED';
-  transactionId?: string;
+  fromCoinPrice: number;
+  toCoinPrice: number;
+  fromCoinSnapshot: number;
+  toCoinSnapshot: number;
+  priceDeviationPercent: number;
+  priceThreshold: number;
+  deviationTriggered: boolean;
+  unitGainPercent: number;
+  ethEquivalentValue: number;
+  minEthEquivalent: number;
+  globalPeakValue: number;
+  currentGlobalPeakValue: number | null;
+  globalProtectionTriggered: boolean;
+  swapPerformed: boolean;
   reason: string;
+  tradeId: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BotAsset {
@@ -117,6 +127,9 @@ export interface BotDeviationsResponse {
   timeSeriesData: Record<string, DeviationPoint[]>;
   latestDeviations: Record<string, LatestCoinDeviation>;
   coins: string[];
+  totalCount?: number; // Total count for pagination
+  page?: number;       // Current page number
+  limit?: number;      // Records per page
 }
 
 export interface BotStateData {
@@ -316,13 +329,23 @@ export async function fetchTradeDecisions(
 /**
  * Fetch swap decisions for a specific bot
  */
+export interface SwapDecisionsResponse {
+  total: number;
+  offset: number;
+  limit: number;
+  items: SwapDecision[];
+}
+
 export async function fetchSwapDecisions(
   botId: number, 
   page: number = 1, 
   pageSize: number = 10
-): Promise<{ data: SwapDecision[], count: number }> {
+): Promise<SwapDecisionsResponse> {
   try {
-    const response = await fetch(`${API_URL}/api/bots/${botId}/swap-decisions?page=${page}&limit=${pageSize}`, {
+    // Convert page to offset for API
+    const offset = (page - 1) * pageSize;
+    
+    const response = await fetch(`${API_URL}/api/bots/${botId}/swap-decisions?offset=${offset}&limit=${pageSize}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -333,7 +356,7 @@ export async function fetchSwapDecisions(
     return handleResponse(response);
   } catch (error: any) {
     console.error(`Error fetching swap decisions for bot ${botId}:`, error);
-    return { data: [], count: 0 }; // Return empty data on error
+    return { total: 0, offset: 0, limit: pageSize, items: [] }; // Return empty data on error
   }
 }
 
@@ -439,7 +462,10 @@ export async function fetchBotCoins(botId: number): Promise<string[]> {
  * @param {Date|string} options.to - End date for data range
  * @param {string} options.baseCoin - Filter by base coin
  * @param {string} options.targetCoin - Filter by target coin
- * @returns {Promise<DeviationPoint[]>} - Deviation data for charting
+ * @param {string} options.timeRange - Time range for data
+ * @param {number} options.page - Page number for pagination
+ * @param {number} options.limit - Number of records per page
+ * @returns {Promise<BotDeviationsResponse>} - Deviation data for charting
  */
 export async function fetchBotDeviations(
   botId: number,
@@ -449,6 +475,8 @@ export async function fetchBotDeviations(
     baseCoin?: string;
     targetCoin?: string;
     timeRange?: string;
+    page?: number;
+    limit?: number;
   } = {}
 ): Promise<BotDeviationsResponse> {
   try {
@@ -460,6 +488,8 @@ export async function fetchBotDeviations(
     if (options.baseCoin) params.append('baseCoin', options.baseCoin);
     if (options.targetCoin) params.append('targetCoin', options.targetCoin);
     if (options.timeRange) params.append('timeRange', options.timeRange);
+    if (options.page !== undefined) params.append('page', options.page.toString());
+    if (options.limit !== undefined) params.append('limit', options.limit.toString());
     
     const queryString = params.toString() ? `?${params.toString()}` : '';
     
@@ -517,7 +547,7 @@ export async function fetchPriceComparison(botId: number): Promise<PriceComparis
     return handleResponse(response);
   } catch (error: any) {
     console.error(`Error fetching price comparison data for bot ${botId}:`, error);
-    throw error;
+    throw new Error(`Failed to fetch price comparison data: ${error.message || 'Unknown error'}`);
   }
 }
 
@@ -553,20 +583,24 @@ export async function fetchHistoricalComparison(
     const params = new URLSearchParams();
     
     if (options.fromTime) {
-      params.append('fromTime', new Date(options.fromTime).toISOString());
+      params.append('fromTime', options.fromTime instanceof Date 
+        ? options.fromTime.toISOString() 
+        : options.fromTime);
     }
     
     if (options.toTime) {
-      params.append('toTime', new Date(options.toTime).toISOString());
+      params.append('toTime', options.toTime instanceof Date 
+        ? options.toTime.toISOString() 
+        : options.toTime);
     }
     
-    if (options.coin) {
+    if (options.coin && options.coin !== 'all') {
       params.append('coin', options.coin);
     }
     
     const queryString = params.toString() ? `?${params.toString()}` : '';
     
-    const response = await fetch(`${API_URL}/api/snapshots/bots/${botId}/historical${queryString}`, {
+    const response = await fetch(`${API_URL}/api/snapshots/bots/${botId}/historical-comparison${queryString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -577,6 +611,6 @@ export async function fetchHistoricalComparison(
     return handleResponse(response);
   } catch (error: any) {
     console.error(`Error fetching historical comparison data for bot ${botId}:`, error);
-    throw error;
+    throw new Error(`Failed to fetch historical comparison data: ${error.message || 'Unknown error'}`);
   }
 }
