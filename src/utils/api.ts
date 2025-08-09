@@ -228,3 +228,44 @@ export async function updateBot(botId: number, botData: Partial<Bot>) {
   
   return handleResponse(response);
 }
+
+// Fetch trades for a specific bot
+export async function fetchBotTrades(botId: number) {
+  const response = await fetch(`${API_URL}/api/bots/${botId}/trades`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    }
+  });
+  
+  return handleResponse(response);
+}
+
+// Sell bot's current coin to a stablecoin
+export async function sellToStablecoin(botId: number, fromCoin: string, amount: string | number, targetStablecoin: string) {
+  const response = await fetch(`${API_URL}/api/trades/sell-to-stablecoin`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
+    body: JSON.stringify({ botId, fromCoin, amount, targetStablecoin })
+  });
+  
+  return handleResponse(response);
+}
+
+// Toggle bot enabled status
+export async function toggleBotStatus(botId: number, enabled: boolean) {
+  const response = await fetch(`${API_URL}/api/bots/${botId}/toggle`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
+    body: JSON.stringify({ enabled })
+  });
+  
+  return handleResponse(response);
+}

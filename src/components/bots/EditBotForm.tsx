@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Card from '../ui/Card';
+import {Card} from '../ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { fetchAccounts, fetchAvailableCoins, getBot, updateBot } from '@/utils/api';
-import Badge from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import availableCoinsData from '@/data/availableCoins.json';
 
 // Types

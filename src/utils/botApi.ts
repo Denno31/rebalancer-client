@@ -37,6 +37,109 @@ export interface Trade {
   price?: number;
 }
 
+export interface TradeDecision {
+  id: number;
+  botId: number;
+  timestamp: string;
+  coin: string;
+  decision: string;
+  priceChange: number;
+  deviation: number;
+  executionStatus: 'Executed' | 'Pending' | 'Failed';
+  reason: string;
+  metadata?: Record<string, any>;
+}
+
+export interface SwapDecision {
+  id: number;
+  timestamp: string;
+  botId: number;
+  fromCoin: string;
+  toCoin: string;
+  fromAmount: number;
+  toAmount: number;
+  exchangeRate: number;
+  fee?: number;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  transactionId?: string;
+  reason: string;
+}
+
+export interface BotAsset {
+  coin: string;
+  amount: number;
+  usdtValue: number;
+  percentage: number;
+  lastUpdate: string;
+}
+
+export interface LogEntry {
+  id: number;
+  timestamp: string;
+  level: 'INFO' | 'WARNING' | 'ERROR' | 'DEBUG';
+  message: string;
+  botId: number;
+  metadata?: Record<string, any>;
+}
+
+export interface PricePoint {
+  timestamp: string;
+  price: number;
+  coin: string;
+}
+
+export interface DeviationPoint {
+  timestamp: string;
+  baseCoin: string;
+  targetCoin: string;
+  basePrice: number;
+  targetPrice: number;
+  deviationPercent: number;
+}
+
+export interface CoinPricePoint {
+  basePrice: number;
+  targetPrice: number;
+  timestamp: string;
+}
+
+export interface LatestCoinDeviationData {
+  [key: string]: number | null;
+}
+
+export interface LatestCoinDeviation {
+  deviations?: LatestCoinDeviationData;
+  prices?: Record<string, CoinPricePoint>;
+}
+
+export interface BotDeviationsResponse {
+  success: boolean;
+  timeSeriesData: Record<string, DeviationPoint[]>;
+  latestDeviations: Record<string, LatestCoinDeviation>;
+  coins: string[];
+}
+
+export interface BotStateData {
+  id: number;
+  name: string;
+  status: 'ACTIVE' | 'PAUSED' | 'ERROR';
+  currentCoin: string;
+  currentCoinAmount: number;
+  currentCoinValueUsd: number;
+  initialInvestment: number;
+  totalValueUsd: number;
+  profitLoss: number;
+  profitLossPercentage: number;
+  lastTradeTime: string | null;
+  tradingPairs: string[];
+  lastUpdateTime: string;
+  accountId: string;
+  exchange: string;
+  tradingStrategy: string;
+  deviationThreshold: number;
+  rebalanceThreshold: number;
+}
+
 export interface BotPrices {
   [key: string]: number;
 }
@@ -183,5 +286,297 @@ export async function fetchBotPerformance(botId: number, period: string = 'week'
   } catch (error: any) {
     console.error(`Error fetching performance for bot ${botId}:`, error);
     return { labels: [], data: [] }; // Return empty data on error
+  }
+}
+
+/**
+ * Fetch trade decisions for a specific bot
+ */
+export async function fetchTradeDecisions(
+  botId: number, 
+  page: number = 1, 
+  pageSize: number = 10
+): Promise<{ data: TradeDecision[], count: number }> {
+  try {
+    const response = await fetch(`${API_URL}/api/bots/${botId}/trade-decisions?page=${page}&limit=${pageSize}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching trade decisions for bot ${botId}:`, error);
+    return { data: [], count: 0 }; // Return empty data on error
+  }
+}
+
+/**
+ * Fetch swap decisions for a specific bot
+ */
+export async function fetchSwapDecisions(
+  botId: number, 
+  page: number = 1, 
+  pageSize: number = 10
+): Promise<{ data: SwapDecision[], count: number }> {
+  try {
+    const response = await fetch(`${API_URL}/api/bots/${botId}/swap-decisions?page=${page}&limit=${pageSize}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching swap decisions for bot ${botId}:`, error);
+    return { data: [], count: 0 }; // Return empty data on error
+  }
+}
+
+/**
+ * Fetch bot logs
+ */
+export async function fetchBotLogs(
+  botId: number, 
+  page: number = 1, 
+  pageSize: number = 10,
+  level: string = 'ALL'
+): Promise<{ data: LogEntry[], count: number }> {
+  try {
+    let url = `${API_URL}/api/bots/${botId}/logs?page=${page}&limit=${pageSize}`;
+    if (level !== 'ALL') {
+      url += `&level=${level}`;
+    }
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching logs for bot ${botId}:`, error);
+    return { data: [], count: 0 }; // Return empty data on error
+  }
+}
+
+/**
+ * Fetch bot state data
+ */
+export async function fetchBotState(botId: number): Promise<BotStateData> {
+  try {
+    const response = await fetch(`${API_URL}/api/bots/${botId}/state`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching state for bot ${botId}:`, error);
+    throw new Error(`Failed to fetch bot state: ${error.message || 'Unknown error'}`);
+  }
+}
+
+/**
+ * Fetch price history data for a specific coin
+ */
+export async function fetchPriceHistory(
+  botId: number,
+  coin: string,
+  timeRange: string = '7d'
+): Promise<PricePoint[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/bots/${botId}/prices/${coin}/history?timeRange=${timeRange}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching price history for bot ${botId}, coin ${coin}:`, error);
+    return []; // Return empty array on error
+  }
+}
+
+/**
+ * Fetch available coins for a bot
+ */
+export async function fetchBotCoins(botId: number): Promise<string[]> {
+  try {
+    const response = await fetch(`${API_URL}/api/bots/${botId}/coins`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching available coins for bot ${botId}:`, error);
+    return []; // Return empty array on error
+  }
+}
+
+/**
+ * Fetch relative coin deviation data for charting
+ * @param {number} botId - ID of the bot to fetch deviations for
+ * @param {Object} options - Optional parameters
+ * @param {Date|string} options.from - Start date for data range
+ * @param {Date|string} options.to - End date for data range
+ * @param {string} options.baseCoin - Filter by base coin
+ * @param {string} options.targetCoin - Filter by target coin
+ * @returns {Promise<DeviationPoint[]>} - Deviation data for charting
+ */
+export async function fetchBotDeviations(
+  botId: number,
+  options: {
+    from?: Date | string;
+    to?: Date | string;
+    baseCoin?: string;
+    targetCoin?: string;
+    timeRange?: string;
+  } = {}
+): Promise<BotDeviationsResponse> {
+  try {
+    const params = new URLSearchParams();
+    
+    // Handle both legacy and new parameter options
+    if (options.from) params.append('from', new Date(options.from).toISOString());
+    if (options.to) params.append('to', new Date(options.to).toISOString());
+    if (options.baseCoin) params.append('baseCoin', options.baseCoin);
+    if (options.targetCoin) params.append('targetCoin', options.targetCoin);
+    if (options.timeRange) params.append('timeRange', options.timeRange);
+    
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    
+    // Use the legacy API endpoint structure
+    const response = await fetch(`${API_URL}/api/deviations/bots/${botId}${queryString}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401) {
+        // Handle unauthorized error like in legacy code
+        localStorage.removeItem('token'); // This mimics the logout function
+        throw new Error('Please login again');
+      }
+      throw new Error('Failed to fetch deviation data');
+    }
+    
+    return response.json();
+  } catch (error: any) {
+    console.error(`Error fetching deviation data for bot ${botId}:`, error);
+    throw error; // Throw error like legacy code instead of returning empty array
+  }
+}
+
+// Keep fetchDeviationData as an alias for backwards compatibility
+export const fetchDeviationData = fetchBotDeviations;
+
+/**
+ * Fetch price comparison between initial snapshot and current prices
+ * @param {number} botId - ID of the bot
+ * @returns {Promise<PriceComparisonData>} - Price comparison data with initial and current prices
+ */
+export interface PriceComparisonData {
+  coins: string[];
+  initialPrices: Record<string, number>;
+  currentPrices: Record<string, number>;
+  percentChanges: Record<string, number>;
+  timestamp: string;
+}
+
+export async function fetchPriceComparison(botId: number): Promise<PriceComparisonData> {
+  try {
+    const response = await fetch(`${API_URL}/api/snapshots/bots/${botId}/price-comparison`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching price comparison data for bot ${botId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch historical price data with snapshot reference points
+ * @param {number} botId - ID of the bot
+ * @param {Object} options - Optional parameters
+ * @param {Date|string} options.fromTime - Start date for data range
+ * @param {Date|string} options.toTime - End date for data range
+ * @param {string} options.coin - Filter by coin
+ * @returns {Promise<HistoricalComparisonData>} - Historical price data with snapshot reference
+ */
+export interface HistoricalDataPoint {
+  timestamp: string;
+  price: number;
+  isSnapshot?: boolean;
+}
+
+export interface HistoricalComparisonData {
+  coin: string;
+  data: HistoricalDataPoint[];
+}
+
+export async function fetchHistoricalComparison(
+  botId: number,
+  options: {
+    fromTime?: Date | string;
+    toTime?: Date | string;
+    coin?: string;
+  } = {}
+): Promise<HistoricalComparisonData> {
+  try {
+    const params = new URLSearchParams();
+    
+    if (options.fromTime) {
+      params.append('fromTime', new Date(options.fromTime).toISOString());
+    }
+    
+    if (options.toTime) {
+      params.append('toTime', new Date(options.toTime).toISOString());
+    }
+    
+    if (options.coin) {
+      params.append('coin', options.coin);
+    }
+    
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    
+    const response = await fetch(`${API_URL}/api/snapshots/bots/${botId}/historical${queryString}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      }
+    });
+    
+    return handleResponse(response);
+  } catch (error: any) {
+    console.error(`Error fetching historical comparison data for bot ${botId}:`, error);
+    throw error;
   }
 }

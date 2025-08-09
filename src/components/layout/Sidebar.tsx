@@ -94,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               </Link>
               
               {botList.map(bot => (
-                <Link key={bot.id} href={`/bot-details/${bot.id}`} passHref>
+                <Link key={bot.id} href={`/bots/${bot.id}`} passHref>
                   <div className={`flex items-center gap-2 px-4 py-2 cursor-pointer ${isActive(`/bot-details/${bot.id}`) ? 'text-white' : 'text-gray-400 hover:text-white'}`}>
                     <div className={`w-2 h-2 rounded-full ${bot.status === 'active' ? 'bg-green-500' : 'bg-gray-500'}`}></div>
                     <span className="text-sm truncate">{bot.name}</span>
