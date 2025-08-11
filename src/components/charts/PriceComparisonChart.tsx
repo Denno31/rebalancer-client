@@ -73,7 +73,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
   const [selectedCoin, setSelectedCoin] = useState<string>('all');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-  const chartRef = useRef<any>(null);
+  
 
   // Time range options in milliseconds - memoized to prevent recreation
   const timeRanges = useMemo<Record<string, number>>(() => ({
@@ -185,9 +185,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
       if (refreshTimer) clearInterval(refreshTimer);
 
       // Destroy chart instance when component unmounts to prevent canvas reuse errors
-      if (chartRef.current && chartRef.current.chartInstance) {
-        chartRef.current.chartInstance.destroy();
-      }
+
     };
   }, [botId, autoRefresh, loadPriceComparison, loadHistoricalComparison]);
 

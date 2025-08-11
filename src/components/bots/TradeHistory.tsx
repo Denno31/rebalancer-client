@@ -148,7 +148,7 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
     return (
       <div className="text-center p-8">
         <p className="text-gray-400">No trade history available</p>
-        <p className="text-sm text-gray-500 mt-2">This bot hasn't made any trades yet</p>
+        <p className="text-sm text-gray-500 mt-2">This bot hasn&apos;t made any trades yet</p>
       </div>
     );
   }

@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '../ui/Card';
+
 import { Badge } from '../ui/Badge';
-import { fetchSwapDecisions, SwapDecision, SwapDecisionsResponse } from '@/utils/botApi';
+import { fetchSwapDecisions, SwapDecision } from '@/utils/botApi';
 
 // Using SwapDecision interface from botApi.ts
 
@@ -30,7 +30,7 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
         
         setSwaps(response.items || []);
         setTotalCount(response.total || 0);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch swap decisions:', err);
         setError('Failed to load swap decisions. Please try again later.');
       } finally {

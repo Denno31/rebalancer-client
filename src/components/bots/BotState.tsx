@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { fetchBotState, BotStateData } from '@/utils/botApi';
 

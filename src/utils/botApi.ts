@@ -10,7 +10,7 @@ export interface Bot {
   budget?: number;
   currentCoin?: string;
   exchange?: string;
-  trades?: Array<Record<string, unknown>>;
+  trades?: Trade[];
   performance?: number;
   created?: string;
   updated?: string;
@@ -47,7 +47,7 @@ export interface TradeDecision {
   deviation: number;
   executionStatus: 'Executed' | 'Pending' | 'Failed';
   reason: string;
-  metadata?: Record<string, any>;
+  
 }
 
 export interface SwapDecision {
@@ -89,7 +89,7 @@ export interface LogEntry {
   level: 'INFO' | 'WARNING' | 'ERROR' | 'DEBUG';
   message: string;
   botId: number;
-  metadata?: Record<string, any>;
+ 
 }
 
 export interface PricePoint {

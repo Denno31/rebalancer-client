@@ -55,7 +55,7 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
         if (data.success && data.timeSeriesData && Object.keys(data.timeSeriesData).length > 0 && !selectedPair) {
           setSelectedPair(Object.keys(data.timeSeriesData)[0]);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error('Failed to fetch deviation data:', err);
         setError('Failed to load deviation data. Please try again later.');
       } finally {

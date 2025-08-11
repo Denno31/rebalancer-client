@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '../ui/Card';
-import { fetchBotCoins, fetchDeviationData } from '@/utils/botApi';
+import { fetchBotCoins } from '@/utils/botApi';
 
 // Temporary implementation of fetchCoinPrice until API is available
 async function fetchCoinPrice(coin: string): Promise<number> {
@@ -404,9 +403,9 @@ const DeviationCalculator: React.FC<DeviationCalculatorProps> = ({ botId }) => {
       <div className="bg-gray-800 rounded-md p-4">
         <h3 className="font-medium mb-2">How to Use</h3>
         <ol className="list-decimal list-inside space-y-1 text-gray-400">
-          <li>Select the coins you want to compare in the "From" and "To" dropdowns</li>
+          <li>Select the coins you want to compare in the &quot;From&quot; and &quot;To&quot; dropdowns</li>
           <li>Enter the price in USD for each coin</li>
-          <li>Click the "Calculate Deviation" button to see the percentage change</li>
+          <li>Click the &quot;Calculate Deviation&quot; button to see the percentage change</li>
           <li>Results will be saved in your calculation history for reference</li>
         </ol>
       </div>

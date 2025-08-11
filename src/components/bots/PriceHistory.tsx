@@ -112,7 +112,7 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
 
         // Calculate time range based on selection
         const toTime = new Date();
-        let fromTime = new Date(toTime);
+        const fromTime = new Date(toTime);
 
         switch (timeRange) {
           case '24h':
@@ -317,7 +317,7 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
           <div>
             <select
               className="bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-sm"
-              value={selectedCoin}
+              value={selectedCoin as string}
               onChange={handleCoinChange}
             >
               {coins.map((coin) => (
