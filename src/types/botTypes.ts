@@ -4,7 +4,7 @@ export interface Bot {
     id: number;
     name: string;
     enabled: boolean;
-    coins: string[];
+    coins: string[] | string;
     thresholdPercentage: number;
     checkInterval: number;
     initialCoin: string;
