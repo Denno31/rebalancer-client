@@ -30,8 +30,8 @@ const BotCard: React.FC<BotCardProps> = ({ bot }) => {
   };
   
   const getCoinsDisplay = () => {
-    let coins = Array.isArray(bot.coins) ? bot.coins : bot.coins?.split(',').map(coin => coin.trim());
-    const coinsList = coins || [];
+
+    const coinsList = bot.coins;
     
     if (coinsList.length <= 5) {
       return (
@@ -105,20 +105,20 @@ const BotCard: React.FC<BotCardProps> = ({ bot }) => {
           <div>
             <div className="text-sm font-medium text-gray-400">Current Value</div>
             <div className="font-medium text-white">
-              {formatCurrency(bot.currentValue || bot.manualBudgetAmount || 0)}
+              {formatCurrency( bot.manualBudgetAmount || 0)}
             </div>
           </div>
         </div>
         
         {/* Profit & Take Profit */}
         <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
+          {/* <div>
             <div className="text-sm font-medium text-gray-400">Profit/Loss</div>
             <div className={`font-medium ${getProfitLossClass(bot.profitLoss)}`}>
               {bot.profitLoss ? formatCurrency(bot.profitLoss) : 'N/A'}
               {bot.profitLossPercentage && ` (${formatPercentage(bot.profitLossPercentage)})`}
             </div>
-          </div>
+          </div> */}
           <div>
             <div className="text-sm font-medium text-gray-400">Take Profit</div>
             <div className="font-medium text-white">
@@ -128,12 +128,12 @@ const BotCard: React.FC<BotCardProps> = ({ bot }) => {
         </div>
         
         {/* Last Trade */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <div className="text-sm font-medium text-gray-400">Last Trade</div>
           <div className="text-sm text-gray-300">
             {bot.lastTradeDate ? new Date(bot.lastTradeDate).toLocaleString() : 'No trades yet'}
           </div>
-        </div>
+        </div> */}
         
         {/* Actions */}
         <div className="flex justify-between mt-4">

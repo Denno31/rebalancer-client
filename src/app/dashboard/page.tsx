@@ -20,6 +20,7 @@ import { Line, Doughnut } from 'react-chartjs-2';
 import { Bot } from '@/types/botTypes';
 import { Trade } from '@/types/tradeTypes';
 import { AssetAllocation } from '@/types/botAssetTypes';
+import Link from 'next/link';
 
 // Register Chart.js components
 ChartJS.register(
@@ -596,7 +597,7 @@ function DashboardContent() {
     <div className="dashboard-container p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
-        <a 
+        <Link 
           href="/bots/create" 
           className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md flex items-center space-x-2"
         >
@@ -604,7 +605,7 @@ function DashboardContent() {
             <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
           <span>Create Bot</span>
-        </a>
+        </Link>
       </div>
       
       {/* Stats Overview */}
@@ -694,7 +695,7 @@ function DashboardContent() {
                       ${activity.amount ? activity.amount.toLocaleString('en-US', { maximumFractionDigits: 2 }) : '0.00'}
                     </td>
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-400">
-                      {formatTimeDifference(activity.timestamp)}
+                      {/* {formatTimeDifference(activity?.timestamp)} */}
                     </td>
                   </tr>
                 ))}

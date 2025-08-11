@@ -64,7 +64,7 @@ export default function AllBotsPage() {
         ) : (
           <div className="text-center p-8 bg-gray-800 rounded-md">
             <h3 className="text-xl font-medium text-gray-300 mb-2">No bots found</h3>
-            <p className="text-gray-400 mb-6">You haven't created any bots yet.</p>
+            <p className="text-gray-400 mb-6">You haven&apos;t created any bots yet.</p>
             <Link 
               href="/bots/create" 
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"

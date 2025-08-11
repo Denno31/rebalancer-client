@@ -10,7 +10,7 @@ export interface Bot {
   budget?: number;
   currentCoin?: string;
   exchange?: string;
-  trades?: any[];
+  trades?: Array<Record<string, unknown>>;
   performance?: number;
   created?: string;
   updated?: string;
