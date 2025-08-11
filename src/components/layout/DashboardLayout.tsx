@@ -9,9 +9,10 @@ import { Bot } from '@/types/botTypes';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  customTitle?: string;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, customTitle }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [username, setUsername] = useState('User');
   const [botList, setBotList] = useState<Bot[]>([]);
@@ -56,9 +57,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
   };
   
   const getPageTitle = () => {
+    // If a custom title is provided, use it
+    if (customTitle) return customTitle;
+    
+    // Otherwise, determine the title based on the path
     if (pathname === '/dashboard') return 'Dashboard';
     if (pathname === '/bots') return 'Bots';
     if (pathname.startsWith('/bot-details/')) return 'Bot Details';
+    if (pathname.startsWith('/bots/')) return 'Bot Details';
     if (pathname === '/new-bot') return 'New Bot';
     if (pathname === '/analytics') return 'Analytics';
     if (pathname === '/settings') return 'Settings';

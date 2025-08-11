@@ -6,6 +6,7 @@ import { getBot, sellToStablecoin, toggleBotStatus } from '@/utils/api';
 import { Bot } from '@/types/botTypes';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card } from '@/components/ui/Card';
+import BotLogs from '@/components/bots/BotLogs';
 import Link from 'next/link';
 import TradeHistory from '@/components/bots/TradeHistory';
 import TradeDecisions from '@/components/bots/TradeDecisions';
@@ -40,29 +41,45 @@ interface EnrichedBot {
   id: number;
   name: string;
   state?: {
-    currentCoin?: string;
+    currentCoin?: string | null;
     balance?: number;
     usdtValue?: number;
   };
-  currentCoin?: string;
+  currentCoin?: string | null;
   balance?: number;
   usdtValue?: number;
   enabled: boolean;
-  accountId: number;
+  accountId: number | string;
   description?: string;
   assets?: any[];
   trades?: any[];
   totalTrades?: number;
+  successfulTrades?: number;
+  successRate?: number;
   lastTrade?: string;
+  tradeStats?: {
+    totalTrades: number;
+    successfulTrades: number;
+    successRate: number;
+  };
   thresholdPercentage: number;
   initialCoin?: string;
-  coins?: string[];
+  coins?: string[] | string;
   checkInterval?: number;
   manualBudgetAmount?: number;
   takeProfitPercentage?: number;
   createdAt?: string;
   updatedAt?: string;
   exchangeName?: string;
+  currentAsset?: {
+    coin: string;
+    amount: number;
+    usdtEquivalent: number;
+    entryPrice: number;
+    realTimeUsdtEquivalent: number;
+    profit: number;
+    profitPercentage: number;
+  };
 }
 
 export default function BotDetailPage() {
@@ -128,23 +145,7 @@ export default function BotDetailPage() {
     }
   };
   
-  const getCoinsDisplay = () => {
-    if (!bot || !bot.coins) return 'No coins';
-    
-    let coins = Array.isArray(bot.coins) ? bot.coins : bot.coins.split(',').map(coin => coin.trim());
-    return (
-      <div className="flex flex-wrap gap-2 mt-2">
-        {coins.map((coin, index) => (
-          <span 
-            key={`${coin}-${index}`}
-            className="px-3 py-1 text-sm rounded-md bg-gray-700 text-white"
-          >
-            {coin}
-          </span>
-        ))}
-      </div>
-    );
-  };
+
   
   const getProfitLossClass = (value?: number) => {
     if (!value) return 'text-gray-400';
@@ -181,7 +182,7 @@ export default function BotDetailPage() {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout customTitle={bot?.name ? `Bot: ${bot.name}` : 'Bot Details'}>
       <div className="p-6">
         {/* Header Section */}
         <div className="bg-gray-800 p-4 mb-6 rounded-md">
@@ -243,19 +244,48 @@ export default function BotDetailPage() {
             <div>
               <p className="text-sm text-gray-400">Current Coin</p>
               <p className="text-xl font-bold">{bot.currentCoin || bot.initialCoin || 'USDT'}</p>
+              {bot.currentAsset && (
+                <p className="text-sm text-gray-300 mt-1">
+                  <span className="font-medium">{bot.currentAsset.amount.toLocaleString(undefined, { maximumFractionDigits: 8 })}</span> units
+                </p>
+              )}
             </div>
           </div>
 
           {/* USDT Value Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
+          <div className="bg-gray-800 rounded-md p-4 flex items-start">
             <div className="bg-blue-900/30 p-3 rounded-full mr-4">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <div>
+            <div className="w-full">
               <p className="text-sm text-gray-400">USDT Value</p>
-              <p className="text-xl font-bold">{formatCurrency(bot.state?.usdtValue) || 'N/A'}</p>
+              <div className="flex items-baseline gap-2">
+                <p className="text-xl font-bold">{formatCurrency(bot.currentAsset?.usdtEquivalent) || formatCurrency(bot.state?.usdtValue) || 'N/A'}</p>
+                {bot.currentAsset?.realTimeUsdtEquivalent && (
+                  <p className="text-sm text-gray-300">Live: {formatCurrency(bot.currentAsset.realTimeUsdtEquivalent)}</p>
+                )}
+              </div>
+              {bot.currentAsset?.profit && (
+                <div className="mt-2 flex items-center gap-2">
+                  <div className={`${getProfitLossClass(bot.currentAsset.profit)} font-medium text-sm flex items-center`}>
+                    {bot.currentAsset.profit > 0 ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      </svg>
+                    ) : bot.currentAsset.profit < 0 ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    ) : null}
+                    {formatCurrency(bot.currentAsset.profit)}
+                  </div>
+                  <div className={`${getProfitLossClass(bot.currentAsset.profitPercentage)} text-xs px-2 py-0.5 rounded-full ${bot.currentAsset.profitPercentage > 0 ? 'bg-green-900/20' : bot.currentAsset.profitPercentage < 0 ? 'bg-red-900/20' : 'bg-gray-700/20'}`}>
+                    {formatPercentage(bot.currentAsset.profitPercentage)}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -268,7 +298,13 @@ export default function BotDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-400">Total Trades</p>
-              <p className="text-xl font-bold">{bot.totalTrades || 0}</p>
+              <p className="text-xl font-bold">
+                {bot.tradeStats?.totalTrades !== undefined 
+                  ? bot.tradeStats.totalTrades 
+                  : bot.totalTrades !== undefined 
+                    ? bot.totalTrades 
+                    : 0}
+              </p>
             </div>
           </div>
 
@@ -323,7 +359,13 @@ export default function BotDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-400">Success Rate</p>
-              <p className="text-xl font-bold">N/A</p>
+              <p className="text-xl font-bold">
+                {bot.tradeStats?.successRate !== undefined 
+                  ? `${bot.tradeStats.successRate}%` 
+                  : bot.successRate !== undefined 
+                    ? `${bot.successRate}%` 
+                    : 'N/A'}
+              </p>
             </div>
           </div>
         </div>
@@ -339,6 +381,7 @@ export default function BotDetailPage() {
                 { id: 'price-movement', label: 'Price Movement', icon: 'bi bi-graph-up-arrow' },
                 { id: 'trades', label: 'Trade History', icon: 'bi bi-clock-history' },
                 { id: 'swap-decisions', label: 'Swap Decisions', icon: 'bi bi-arrow-left-right' },
+                { id: 'price-history', label: 'Price History', icon: 'bi bi-currency-exchange' },
                 { id: 'logs', label: 'Logs', icon: 'bi bi-journal-text' },
               ].map((tab) => (
                 <button
@@ -411,7 +454,7 @@ export default function BotDetailPage() {
           {activeTab === 'overview' && (
             <div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card title="Bot Details" className="h-full">
+                <Card  className="h-full">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
                     <div>
                       <h4 className="text-gray-400 text-sm mb-1">ID</h4>
@@ -488,14 +531,14 @@ export default function BotDetailPage() {
                   </div>
                 </Card>
             
-                <Card title="Monitored Coins" className="h-full">
+                <Card  className="h-full">
                   <div>
                     <p className="text-gray-400 text-sm mb-3">
                       The bot will trade between these coins based on price movements:
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                      {bot.coins?.length > 0 ? (
-                        bot.coins.map((coin, index) => (
+                      {bot.coins ? (
+                        (Array.isArray(bot.coins) ? bot.coins : [bot.coins]).map((coin: string, index: number) => (
                           <div 
                             key={index} 
                             className={`bg-gray-700 rounded-md p-3 border-l-4 ${coin === (bot.currentCoin || bot.initialCoin) ? 'border-green-500' : 'border-blue-500'}`}
@@ -515,7 +558,7 @@ export default function BotDetailPage() {
                   </div>
                 </Card>
 
-                <Card title="Bot State" className="h-full">
+                <Card  className="h-full">
                   {bot.state ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(bot.state).map(([key, value]) => {
@@ -545,7 +588,7 @@ export default function BotDetailPage() {
                   )}
                 </Card>
 
-                <Card title="Trading Actions" className="h-full">
+                <Card  className="h-full">
                   <div className="grid grid-cols-1 gap-4">
                     <button
                       className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"

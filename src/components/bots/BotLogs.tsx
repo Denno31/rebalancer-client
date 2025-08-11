@@ -33,7 +33,7 @@ const BotLogs: React.FC<BotLogsProps> = ({ botId }) => {
           pageSize, 
           filterLevel
         );
-        
+        console.log(data)
         setLogs(data);
         setTotalCount(count);
       } catch (err: any) {

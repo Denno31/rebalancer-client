@@ -96,6 +96,7 @@ export interface PricePoint {
   timestamp: string;
   price: number;
   coin: string;
+  source?: string;
 }
 
 export interface DeviationPoint {
@@ -383,7 +384,17 @@ export async function fetchBotLogs(
       }
     });
     
-    return handleResponse(response);
+    // Transform the raw logs array into the expected format with data and count properties
+    const logs = await handleResponse(response);
+    
+    // If the response is already in {data, count} format, return it directly
+    if (logs && typeof logs === 'object' && 'data' in logs && 'count' in logs) {
+      return logs;
+    }
+    
+    // Otherwise, assume it's an array of logs and transform it
+    const logsArray = Array.isArray(logs) ? logs : [];
+    return { data: logsArray, count: logsArray.length };
   } catch (error: any) {
     console.error(`Error fetching logs for bot ${botId}:`, error);
     return { data: [], count: 0 }; // Return empty data on error
@@ -411,15 +422,42 @@ export async function fetchBotState(botId: number): Promise<BotStateData> {
 }
 
 /**
- * Fetch price history data for a specific coin
+ * Fetch price history data for a bot
+ * @param {number} botId - ID of the bot
+ * @param {Date|string} fromTime - Start date for data range
+ * @param {Date|string} toTime - End date for data range
+ * @param {string|null} coin - Optional coin to filter by
+ * @returns {Promise<PricePoint[]>} - Price history data
  */
 export async function fetchPriceHistory(
   botId: number,
-  coin: string,
-  timeRange: string = '7d'
+  fromTime?: Date | string | null,
+  toTime?: Date | string | null,
+  coin?: string | null
 ): Promise<PricePoint[]> {
   try {
-    const response = await fetch(`${API_URL}/api/bots/${botId}/prices/${coin}/history?timeRange=${timeRange}`, {
+    // Default to last 24 hours if not provided
+    if (!fromTime) {
+      const to = new Date();
+      const from = new Date(to);
+      from.setDate(from.getDate() - 1);
+      fromTime = from;
+      toTime = to;
+    }
+    
+    // Ensure dates are ISO strings
+    const fromTimeStr = fromTime instanceof Date ? fromTime.toISOString() : fromTime;
+    const toTimeStr = toTime instanceof Date ? toTime.toISOString() : toTime;
+    
+    // Build the URL - always use the main prices endpoint, not the coin-specific one
+    let url = `${API_URL}/api/bots/${botId}/prices?from_time=${fromTimeStr}&to_time=${toTimeStr}`;
+    
+    // Add coin filter if provided
+    if (coin) {
+      url += `&coin=${coin}`;
+    }
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -429,7 +467,7 @@ export async function fetchPriceHistory(
     
     return handleResponse(response);
   } catch (error: any) {
-    console.error(`Error fetching price history for bot ${botId}, coin ${coin}:`, error);
+    console.error(`Error fetching price history for bot ${botId}${coin ? `, coin ${coin}` : ''}:`, error);
     return []; // Return empty array on error
   }
 }
