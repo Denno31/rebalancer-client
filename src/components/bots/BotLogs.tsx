@@ -129,14 +129,14 @@ const BotLogs: React.FC<BotLogsProps> = ({ botId }) => {
                 </div>
                 <div className="mt-2 font-medium">{log.message}</div>
                 
-                {log.metadata && (
+                {/* {log.metadata && (
                   <div className="mt-3 bg-gray-700/30 rounded p-2 text-sm">
                     <div className="font-medium text-gray-400 mb-1">Additional Information:</div>
                     <pre className="text-xs overflow-x-auto">
                       {JSON.stringify(log.metadata, null, 2)}
                     </pre>
                   </div>
-                )}
+                )} */}
               </div>
             ))}
           </div>
