@@ -39,7 +39,7 @@ interface DashboardBot extends Partial<Bot> {
   id: number;
   name: string;
   enabled: boolean;
-  coins: string;
+  coins: string[];
   currentCoin: string | null;
   status?: string;
   performance?: number;
@@ -261,7 +261,7 @@ function DashboardContent() {
             enabled: true, 
             performance: 3.2,
             // Required Bot properties
-            coins: 'ETH,USDT',
+            coins: ['ETH', 'USDT'],
             thresholdPercentage: 5,
             checkInterval: 10,
             initialCoin: 'ETH',
@@ -276,7 +276,7 @@ function DashboardContent() {
             enabled: true, 
             performance: 5.1,
             // Required Bot properties
-            coins: 'BTC,USDT',
+            coins: ['BTC', 'USDT'],
             thresholdPercentage: 5,
             checkInterval: 10,
             initialCoin: 'BTC',
@@ -291,11 +291,11 @@ function DashboardContent() {
             enabled: false, 
             performance: -1.3,
             // Required Bot properties
-            coins: 'DOT,USDT',
+            coins: ['DOT', 'USDT'],
             thresholdPercentage: 5,
             checkInterval: 10,
             initialCoin: 'DOT',
-            budget: 1000,
+            budget: 1000, 
             currentCoin: 'DOT',
             exchange: 'binance'
           },
@@ -306,7 +306,7 @@ function DashboardContent() {
             enabled: true, 
             performance: 2.7,
             // Required Bot properties
-            coins: 'BNB,USDT',
+            coins: ['BNB', 'USDT'],
             thresholdPercentage: 5,
             checkInterval: 10,
             initialCoin: 'BNB',
