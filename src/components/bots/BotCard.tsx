@@ -31,7 +31,7 @@ const BotCard: React.FC<BotCardProps> = ({ bot }) => {
   
   const getCoinsDisplay = () => {
 
-    const coinsList = bot.coins;
+    const coinsList: string[] = bot.coins as string[];
     
     if (coinsList.length <= 5) {
       return (
