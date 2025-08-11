@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { getBot, sellToStablecoin, toggleBotStatus } from '@/utils/api';
-import { Bot } from '@/types/botTypes';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import type { Bot } from '@/types/botTypes';
 import { Card } from '@/components/ui/Card';
 import BotLogs from '@/components/bots/BotLogs';
 import Link from 'next/link';
@@ -51,8 +51,8 @@ interface EnrichedBot {
   enabled: boolean;
   accountId: number | string;
   description?: string;
-  assets?: any[];
-  trades?: any[];
+  assets?: Array<Record<string, unknown>>;
+  trades?: Array<Record<string, unknown>>;
   totalTrades?: number;
   successfulTrades?: number;
   successRate?: number;
@@ -84,16 +84,15 @@ interface EnrichedBot {
 
 export default function BotDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const botId = Number(params?.id);
   
   const [bot, setBot] = useState<EnrichedBot | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const [actionLoading, _setActionLoading] = useState<boolean>(false); // Prefix with underscore to indicate it's intentionally unused
   const [actionError, setActionError] = useState<string | null>(null);
-  const [showSellModal, setShowSellModal] = useState<boolean>(false);
+
 
   useEffect(() => {
     const fetchBot = async () => {
@@ -135,15 +134,8 @@ export default function BotDetailPage() {
     return `${value.toFixed(2)}%`;
   };
   
-  const getStatusBadge = () => {
-    if (!bot) return null;
-    
-    if (bot.enabled) {
-      return <span className="px-3 py-1 text-sm font-medium rounded-md bg-green-700 text-white">Active</span>;
-    } else {
-      return <span className="px-3 py-1 text-sm font-medium rounded-md bg-gray-500 text-white">Inactive</span>;
-    }
-  };
+  // Status badge is rendered directly in the JSX now
+  // Keeping the function available for potential future use
   
 
   

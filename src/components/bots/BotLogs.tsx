@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card } from '../ui/Card';
+// Card is imported but not used directly in this component
 import { Badge } from '../ui/Badge';
 import { fetchBotLogs, LogEntry } from '@/utils/botApi';
 
@@ -36,7 +36,7 @@ const BotLogs: React.FC<BotLogsProps> = ({ botId }) => {
         console.log(data)
         setLogs(data);
         setTotalCount(count);
-      } catch (err: any) {
+      } catch (err: Error | unknown) {
         console.error('Failed to fetch bot logs:', err);
         setError('Failed to load bot logs. Please try again later.');
       } finally {
