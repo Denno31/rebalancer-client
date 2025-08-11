@@ -273,15 +273,15 @@ const BotForm: React.FC<BotFormProps> = ({ isOpen, onClose, onSubmit, editBot = 
               <Select
                 id="account"
                 value={formData.account_id}
-                onValueChange={(value) => {
-                  setFormData({ ...formData, account_id: value });
-                  if (value) {
-                    loadAvailableCoinsForAccount(value);
+                onChange={(e) => {
+                  setFormData({ ...formData, account_id: e.target.value });
+                  if (e.target.value) {
+                    loadAvailableCoinsForAccount(e.target.value);
                   } else {
                     setAvailableCoins([]);
                   }
                 }}
-                placeholder="Select a trading account"
+                
                 className="bg-gray-700 border-gray-600 text-white"
                 required
               >
@@ -422,11 +422,11 @@ const BotForm: React.FC<BotFormProps> = ({ isOpen, onClose, onSubmit, editBot = 
               {formData.account_id && availableCoins.length > 0 ? (
                 <Select
                   id="initial_coin"
-                  value={formData.initial_coin}
-                  onValueChange={(value) => setFormData({ ...formData, initial_coin: value })}
-                  placeholder="Select an initial coin"
                   className="bg-gray-700 border-gray-600 text-white"
+                  value={formData.initial_coin}
+                  onChange={(e) => setFormData({ ...formData, initial_coin: e.target.value })}
                 >
+                  <option value="" disabled>Select an initial coin</option>
                   {availableCoins
                     .filter(coin => {
                       const coinSymbol = coin.coin || coin.currency || coin.symbol;
@@ -502,7 +502,7 @@ const BotForm: React.FC<BotFormProps> = ({ isOpen, onClose, onSubmit, editBot = 
               <Select
                 id="price_source"
                 value={formData.price_source}
-                onValueChange={(value) => setFormData({ ...formData, price_source: value })}
+                onChange={(e) => setFormData({ ...formData, price_source: e.target.value })}
                 className="bg-gray-700 border-gray-600 text-white"
               >
                 <option value="three_commas">Three Commas</option>
@@ -516,7 +516,7 @@ const BotForm: React.FC<BotFormProps> = ({ isOpen, onClose, onSubmit, editBot = 
               <Select
                 id="preferred_stablecoin"
                 value={formData.preferred_stablecoin}
-                onValueChange={(value) => setFormData({ ...formData, preferred_stablecoin: value })}
+                onChange={(e) => setFormData({ ...formData, preferred_stablecoin: e.target.value })}
                 className="bg-gray-700 border-gray-600 text-white"
               >
                 <option value="USDT">USDT (Tether)</option>

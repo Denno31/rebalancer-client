@@ -1,19 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import {Card} from '../ui/Card';
+import { Card } from '../ui/Card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/Tabs";
 import { fetchAccounts, fetchAvailableCoins, getBot, updateBot } from '@/utils/api';
 import { Badge } from '@/components/ui/Badge';
 import availableCoinsData from '@/data/availableCoins.json';
 
 // Types
-import { Account } from '@/types/accountTypes';
 import { Bot } from '@/types/botTypes';
+
+// Types for account and coin data
+interface ThreeCommasAccount {
+  id: string;
+  name: string;
+  exchange: string;
+}
 
 type CoinData = {
   coin: string;
   amount: number;
 };
+
+interface FormData {
+  name: string;
+  budget: string;
+  thresholdPercentage: string;
+  takeProfitPercentage: string;
+  checkInterval: string;
+  accountId: string;
+  enabled: boolean;
+  initialCoin: string;
+  priceSource: string;
+  preferredStablecoin: string;
+}
 
 interface EditBotFormProps {
   botId: number;
@@ -22,15 +41,17 @@ interface EditBotFormProps {
 
 const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
   // State for form data
-  const [formData, setFormData] = useState<Partial<Bot>>({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
-    description: '',
     budget: '',
     thresholdPercentage: '',
     takeProfitPercentage: '',
     checkInterval: '',
     accountId: '',
     enabled: true,
+    initialCoin: '',
+    priceSource: 'binance',
+    preferredStablecoin: 'USDT'
   });
 
   // UI state
@@ -41,7 +62,7 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
   const [coinEntryMode, setCoinEntryMode] = useState<'select'|'all'|'manual'>('select');
   
   // Data state
-  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accounts, setAccounts] = useState<ThreeCommasAccount[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(false);
   const [accountsError, setAccountsError] = useState('');
   const [coinList, setCoinList] = useState<CoinData[]>([]);
@@ -59,15 +80,13 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
       try {
         const bot = await getBot(botId);
         
-        // Parse coins string to array if needed
-        let coinsArray = bot.coins;
-        if (typeof bot.coins === 'string') {
-          coinsArray = bot.coins.split(',').map(coin => coin.trim());
-        }
+        // Parse coins string to array
+        const coinsArray = Array.isArray(bot.coins) ? bot.coins : 
+          typeof bot.coins === 'string' ? bot.coins.split(',').map(coin => coin.trim()) : 
+          [];
 
         setFormData({
           name: bot.name || '',
-          description: bot.description || '',
           budget: bot.manualBudgetAmount?.toString() || '',
           thresholdPercentage: bot.thresholdPercentage?.toString() || '',
           takeProfitPercentage: bot.takeProfitPercentage?.toString() || '',
@@ -80,9 +99,9 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
         });
 
         // Set selected coins
-        setSelectedCoins(Array.isArray(coinsArray) ? coinsArray : []);
-        if (coinsArray?.length) {
-          setManualCoins(Array.isArray(coinsArray) ? coinsArray.join(', ') : '');
+        setSelectedCoins(coinsArray);
+        if (coinsArray.length > 0) {
+          setManualCoins(coinsArray.join(', '));
         }
       } catch (err) {
         console.error('Failed to fetch bot:', err);
@@ -172,13 +191,15 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
     
     try {
       // Prepare data for API
-      const processedData = {
+      const processedData: Partial<Bot> = {
         ...formData,
         coins: selectedCoins,
-        thresholdPercentage: parseFloat(formData.thresholdPercentage as string) || 5,
-        checkInterval: parseInt(formData.checkInterval as string) || 10,
-        manualBudgetAmount: formData.budget ? parseFloat(formData.budget as string) : undefined,
-        takeProfitPercentage: formData.takeProfitPercentage ? parseFloat(formData.takeProfitPercentage as string) : null
+        thresholdPercentage: parseFloat(formData.thresholdPercentage) || 5,
+        checkInterval: parseInt(formData.checkInterval) || 10,
+        manualBudgetAmount: formData.budget ? parseFloat(formData.budget) : undefined,
+        takeProfitPercentage: formData.takeProfitPercentage ? 
+          parseFloat(formData.takeProfitPercentage) : 
+          undefined
       };
       
       // Call API
@@ -187,7 +208,8 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
       setSuccess(true);
       
       // Call onSubmit callback if provided
-      if (onSubmit) {
+      if (onSubmit && 'id' in processedData) {
+        // Only call onSubmit if we have a proper Bot object with id
         onSubmit(processedData as Bot);
       }
       
@@ -195,8 +217,6 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
       setTimeout(() => {
         router.push('/dashboard');
       }, 2000);
-      
-      console.log('Form submitted with:', processedData);
       
     } catch (err) {
       console.error('Form submission error:', err);
@@ -254,19 +274,7 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="description">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
-                className="w-full p-2 rounded-md border border-gray-600 bg-gray-700 text-white"
-              />
-            </div>
+
             
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="accountId">
@@ -398,7 +406,7 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
               
               {/* Entry mode toggle */}
               <div className="flex items-center space-x-4 mb-4">
-                <div className="flex flex-wrap items-center space-x-2 gap-y-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button 
                     type="button"
                     onClick={() => setCoinEntryMode('select')}
@@ -460,15 +468,12 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
                       className="w-full px-3 py-2 border rounded-md bg-gray-800 border-gray-700 text-gray-300"
                       onChange={(e) => {
                         const searchTerm = e.target.value.toUpperCase();
-                        if (searchTerm === '') {
-                          setAllCoins(availableCoinsData.allCoins || []);
-                        } else {
-                          setAllCoins(
-                            (availableCoinsData.allCoins || []).filter(coin =>
-                              coin.includes(searchTerm)
-                            )
-                          );
-                        }
+                        const availableCoins = availableCoinsData.allCoins || [];
+                        setAllCoins(
+                          searchTerm === '' ? 
+                            availableCoins : 
+                            availableCoins.filter(coin => coin.includes(searchTerm))
+                        );
                       }}
                     />
                   </div>
