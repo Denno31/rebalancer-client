@@ -181,9 +181,12 @@ export async function fetchBots(): Promise<Bot[]> {
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error fetching bots:', error);
+    if(error instanceof Error){
     throw new Error(error.message || 'Failed to fetch bots');
+    }
+    throw new Error(error +'Failed to fetch bots');
   }
 }
 
@@ -201,7 +204,7 @@ export async function fetchBotPrices(botId: number): Promise<BotPrices> {
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching prices for bot ${botId}:`, error);
     return {}; // Return empty object on error
   }
@@ -221,7 +224,7 @@ export async function fetchBotAssets(botId: number): Promise<Asset[]> {
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching assets for bot ${botId}:`, error);
     return []; // Return empty array on error
   }
@@ -256,7 +259,7 @@ export async function fetchBotTrades(
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching trades for bot ${botId}:`, error);
     return []; // Return empty array on error
   }
@@ -277,7 +280,7 @@ export async function fetchRealTimePrice(coin: string): Promise<number> {
     
     const data = await handleResponse(response);
     return data.price || 0;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching real-time price for ${coin}:`, error);
     return 0; // Return 0 on error
   }
@@ -297,7 +300,7 @@ export async function fetchBotPerformance(botId: number, period: string = 'week'
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching performance for bot ${botId}:`, error);
     return { labels: [], data: [] }; // Return empty data on error
   }
@@ -321,7 +324,7 @@ export async function fetchTradeDecisions(
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching trade decisions for bot ${botId}:`, error);
     return { data: [], count: 0 }; // Return empty data on error
   }
@@ -355,7 +358,7 @@ export async function fetchSwapDecisions(
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching swap decisions for bot ${botId}:`, error);
     return { total: 0, offset: 0, limit: pageSize, items: [] }; // Return empty data on error
   }
@@ -395,7 +398,7 @@ export async function fetchBotLogs(
     // Otherwise, assume it's an array of logs and transform it
     const logsArray = Array.isArray(logs) ? logs : [];
     return { data: logsArray, count: logsArray.length };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching logs for bot ${botId}:`, error);
     return { data: [], count: 0 }; // Return empty data on error
   }
@@ -415,9 +418,12 @@ export async function fetchBotState(botId: number): Promise<BotStateData> {
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching state for bot ${botId}:`, error);
-    throw new Error(`Failed to fetch bot state: ${error.message || 'Unknown error'}`);
+    if(error instanceof Error){
+      throw new Error(`Failed to fetch bot state: ${error.message || 'Unknown error'}`);
+    }
+    throw new Error(`Failed to fetch bot state: ${error}`);
   }
 }
 
@@ -466,7 +472,7 @@ export async function fetchPriceHistory(
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching price history for bot ${botId}${coin ? `, coin ${coin}` : ''}:`, error);
     return []; // Return empty array on error
   }
@@ -486,7 +492,7 @@ export async function fetchBotCoins(botId: number): Promise<string[]> {
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching available coins for bot ${botId}:`, error);
     return []; // Return empty array on error
   }
@@ -550,7 +556,7 @@ export async function fetchBotDeviations(
     }
     
     return response.json();
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching deviation data for bot ${botId}:`, error);
     throw error; // Throw error like legacy code instead of returning empty array
   }
@@ -583,9 +589,12 @@ export async function fetchPriceComparison(botId: number): Promise<PriceComparis
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching price comparison data for bot ${botId}:`, error);
-    throw new Error(`Failed to fetch price comparison data: ${error.message || 'Unknown error'}`);
+    if(error instanceof Error){
+      throw new Error(`Failed to fetch price comparison data: ${error.message || 'Unknown error'}`);
+    }
+    throw new Error(`Failed to fetch price comparison data: ${error}`);
   }
 }
 
@@ -647,8 +656,11 @@ export async function fetchHistoricalComparison(
     });
     
     return handleResponse(response);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Error fetching historical comparison data for bot ${botId}:`, error);
+    if(error instanceof Error){
     throw new Error(`Failed to fetch historical comparison data: ${error.message || 'Unknown error'}`);
+    }
+    throw new Error(`Failed to fetch historical comparison data: ${error}`);
   }
 }
