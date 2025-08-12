@@ -220,9 +220,15 @@ export default function SystemConfig() {
             </div>
           </div>
 
-          <Button type="submit" variant="primary">
-            Save System Configuration
-          </Button>
+          <div className="flex justify-end mt-4">
+            <Button 
+              type="submit" 
+              variant="primary" 
+              className="px-6"
+            >
+              Save System Configuration
+            </Button>
+          </div>
         </form>
       </Card>
 
@@ -272,15 +278,25 @@ export default function SystemConfig() {
             </select>
           </div>
 
-          <Button type="submit" variant="primary">
-            Save API Configuration
-          </Button>
+          <div className="flex justify-end mt-4">
+            <Button 
+              type="submit" 
+              variant="primary" 
+              className="px-6"
+            >
+              Save API Configuration
+            </Button>
+          </div>
         </form>
       </Card>
 
       <Card className="p-6">
         <h2 className="text-xl font-semibold mb-4">Database Management</h2>
-        <Button variant="secondary" onClick={handleBackupDatabase}>
+        <Button 
+          variant="secondary" 
+          onClick={handleBackupDatabase}
+          className="px-6"
+        >
           Download Database Backup
         </Button>
       </Card>

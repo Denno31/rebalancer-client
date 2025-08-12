@@ -16,6 +16,7 @@ import dynamic from 'next/dynamic';
 import DeviationCalculator from '@/components/bots/DeviationCalculator';
 import BotState from '@/components/bots/BotState';
 import PriceHistory from '@/components/bots/PriceHistory';
+import { Button } from '@/components/ui/Button';
 
 // Dynamically import chart components for better performance
 const DeviationChart = dynamic(() => import('@/components/charts/DeviationChart'), {
@@ -194,26 +195,26 @@ export default function BotDetailPage() {
                   <p className="text-red-400">{actionError}</p>
                 </div>
               )}
-              <button 
-                className={`px-4 py-2 text-white rounded-md flex items-center ${bot.enabled ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+              <Button 
+                variant={bot.enabled ? "danger" : "secondary"}
                 onClick={() => {
                   toggleBotStatus(bot.id, !bot.enabled)
                     .then(() => {
-                      // Update local bot state
-                      setBot({...bot, enabled: !bot.enabled});
+                      setBot({ ...bot, enabled: !bot.enabled });
                     })
                     .catch(err => setActionError(err.message || 'Failed to toggle bot status'));
                 }}
                 disabled={actionLoading}
-              >
+                className="flex items-center"
+              >  
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 {bot.enabled ? 'Stop Bot' : 'Start Bot'}
-              </button>
+              </Button>
               <Link 
                 href={`/bots/${bot.id}/edit`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
+                className="px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -380,7 +381,7 @@ export default function BotDetailPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-4 py-3 font-medium text-sm inline-flex items-center whitespace-nowrap ${activeTab === tab.id 
-                    ? 'border-b-2 border-blue-500 text-blue-500' 
+                    ? 'border-b-2 border-yellow-500 text-yellow-500' 
                     : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'}`}
                 >
                   <i className={`${tab.icon} mr-2`}></i>
@@ -395,7 +396,7 @@ export default function BotDetailPage() {
             <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
             <div className="grid grid-cols-1 gap-3">
               <button
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center"
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-md flex items-center justify-center"
                 onClick={() => {
                   const stablecoin = window.confirm('Choose a stablecoin:\n- OK for USDT\n- Cancel for USDC') ? 'USDT' : 'USDC';
                   const amount = prompt(`Enter amount to sell (or 'max' for all):`, 'max');
@@ -418,7 +419,7 @@ export default function BotDetailPage() {
               </button>
               
               <button
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center"
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-md flex items-center justify-center"
                 onClick={() => alert('Force rebalance not implemented')}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -199,7 +199,7 @@ export default function BotForm() {
       
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/');
       }, 2000);
 
       
@@ -224,7 +224,7 @@ export default function BotForm() {
       
       // Redirect to dashboard after short delay
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/');
       }, 2000);
       
     } catch (err) {

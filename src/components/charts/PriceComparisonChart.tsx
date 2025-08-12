@@ -385,49 +385,49 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            variant={timeRange === '1h' ? 'default' : 'outline'}
+            variant={timeRange === '1h' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('1h')}
           >
             1H
           </Button>
           <Button
             size="sm"
-            variant={timeRange === '6h' ? 'default' : 'outline'}
+            variant={timeRange === '6h' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('6h')}
           >
             6H
           </Button>
           <Button
             size="sm"
-            variant={timeRange === '12h' ? 'default' : 'outline'}
+            variant={timeRange === '12h' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('12h')}
           >
             12H
           </Button>
           <Button
             size="sm"
-            variant={timeRange === '24h' ? 'default' : 'outline'}
+            variant={timeRange === '24h' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('24h')}
           >
             24H
           </Button>
           <Button
             size="sm"
-            variant={timeRange === '3d' ? 'default' : 'outline'}
+            variant={timeRange === '3d' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('3d')}
           >
             3D
           </Button>
           <Button
             size="sm"
-            variant={timeRange === '7d' ? 'default' : 'outline'}
+            variant={timeRange === '7d' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('7d')}
           >
             7D
           </Button>
           <Button
             size="sm"
-            variant={timeRange === '30d' ? 'default' : 'outline'}
+            variant={timeRange === '30d' ? 'primary' : 'outline'}
             onClick={() => handleTimeRangeChange('30d')}
           >
             30D
@@ -468,7 +468,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
           <div className="flex border rounded-md overflow-hidden">
             <Button
               size="sm"
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              variant={viewMode === 'table' ? 'outline' : 'outline'}
               className="px-2 rounded-none"
               onClick={toggleTableView}
             >
@@ -477,7 +477,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
             </Button>
             <Button
               size="sm"
-              variant={viewMode === 'chart' ? 'default' : 'ghost'}
+              variant={viewMode === 'chart' ? 'outline' : 'outline'}
               className="px-2 rounded-none"
               onClick={() => setViewMode('chart')}
             >
