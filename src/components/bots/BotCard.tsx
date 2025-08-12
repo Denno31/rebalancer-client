@@ -1,6 +1,9 @@
 import React from 'react';
 import Link from 'next/link';
 import { Bot } from '@/types/botTypes';
+import { COLORS } from '@/utils/theme';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 
 interface BotCardProps {
   bot: Bot;
@@ -73,9 +76,9 @@ const BotCard: React.FC<BotCardProps> = ({ bot }) => {
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <Card className="overflow-hidden p-0">
       {/* Card Header */}
-      <div className="px-4 py-3 bg-gray-700 flex justify-between items-center">
+      <div className="px-4 py-3 bg-[#2A2E37] flex justify-between items-center">
         <h3 className="text-lg font-medium text-white truncate">{bot.name}</h3>
         {renderStatusBadge()}
       </div>
@@ -137,21 +140,19 @@ const BotCard: React.FC<BotCardProps> = ({ bot }) => {
         
         {/* Actions */}
         <div className="flex justify-between mt-4">
-          <Link 
-            href={`/bots/${bot.id}/edit`}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700"
-          >
-            Edit
+          <Link href={`/bots/${bot.id}/edit`}>
+            <Button variant="primary" size="sm">
+              Edit
+            </Button>
           </Link>
-          <Link 
-            href={`/bots/${bot.id}`}
-            className="px-3 py-2 rounded-md text-sm font-medium bg-gray-600 text-white hover:bg-gray-700"
-          >
-            Details
+          <Link href={`/bots/${bot.id}`}>
+            <Button variant="secondary" size="sm">
+              Details
+            </Button>
           </Link>
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

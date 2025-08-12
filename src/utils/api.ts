@@ -269,3 +269,94 @@ export async function toggleBotStatus(botId: number, enabled: boolean) {
   
   return handleResponse(response);
 }
+
+// System Configuration Types
+export interface SystemConfig {
+  pricing_source: string;
+  fallback_source: string;
+  update_interval: number;
+  websocket_enabled: boolean;
+  analytics_enabled: boolean;
+  analytics_save_interval: number;
+}
+
+export interface ApiConfig {
+  api_key: string;
+  api_secret: string;
+  mode: string;
+}
+
+export interface ApiConfigs {
+  [provider: string]: ApiConfig;
+}
+
+// Fetch system configuration
+export async function fetchSystemConfig(): Promise<SystemConfig> {
+  const response = await fetch(`${API_URL}/api/config/system`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    }
+  });
+  
+  return handleResponse(response);
+}
+
+// Update system configuration
+export async function updateSystemConfig(config: SystemConfig): Promise<SystemConfig> {
+  const response = await fetch(`${API_URL}/api/config/system`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
+    body: JSON.stringify(config)
+  });
+  
+  return handleResponse(response);
+}
+
+// Fetch API configurations
+export async function fetchApiConfigs(): Promise<ApiConfigs> {
+  const response = await fetch(`${API_URL}/api/config/api`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    }
+  });
+  
+  return handleResponse(response);
+}
+
+// Update API configuration
+export async function updateApiConfig(provider: string, config: ApiConfig): Promise<ApiConfig> {
+  const response = await fetch(`${API_URL}/api/config/api/${provider}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeader()
+    },
+    body: JSON.stringify(config)
+  });
+  
+  return handleResponse(response);
+}
+
+// Download database backup
+export async function downloadDatabaseBackup(): Promise<Blob> {
+  const response = await fetch(`${API_URL}/api/system/backup`, {
+    method: 'GET',
+    headers: {
+      ...getAuthHeader()
+    }
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ detail: 'Network error' }));
+    throw new Error(error.detail || 'Failed to download backup');
+  }
+  
+  return response.blob();
+}

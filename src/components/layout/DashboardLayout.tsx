@@ -61,7 +61,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, customTitle
     if (customTitle) return customTitle;
     
     // Otherwise, determine the title based on the path
-    if (pathname === '/dashboard') return 'Dashboard';
+    if (pathname === '/') return 'Dashboard';
     if (pathname === '/bots') return 'Bots';
     if (pathname.startsWith('/bot-details/')) return 'Bot Details';
     if (pathname.startsWith('/bots/')) return 'Bot Details';

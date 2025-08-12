@@ -215,7 +215,7 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
       
       // Redirect to dashboard after success
       setTimeout(() => {
-        router.push('/dashboard');
+        router.push('/');
       }, 2000);
       
     } catch (err) {

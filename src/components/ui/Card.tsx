@@ -1,13 +1,22 @@
 import React from 'react';
+import { COLORS } from '@/utils/theme';
 
 interface CardProps {
   children: React.ReactNode;
   className?: string;
+  variant?: 'default' | 'elevated';
 }
 
-export const Card: React.FC<CardProps> = ({ children, className = '' }) => {
+export const Card: React.FC<CardProps> = ({ 
+  children, 
+  className = '',
+  variant = 'default'
+}) => {
+  const baseClasses = `bg-[${COLORS.background.card}] border border-[${COLORS.border.default}] rounded-lg`;
+  const variantClasses = variant === 'elevated' ? 'shadow-lg' : 'shadow-md';
+  
   return (
-    <div className={`bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md ${className}`}>
+    <div className={`${baseClasses} ${variantClasses} ${className}`}>
       {children}
     </div>
   );
