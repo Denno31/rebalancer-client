@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { getBot, sellToStablecoin, toggleBotStatus } from '@/utils/api';
+import { resetBot } from '@/utils/botApi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import type { Bot } from '@/types/botTypes';
 import { Card } from '@/components/ui/Card';
@@ -13,6 +14,7 @@ import TradeDecisions from '@/components/bots/TradeDecisions';
 import SwapDecisions from '@/components/bots/SwapDecisions';
 import BotAssets from '@/components/bots/BotAssets';
 import dynamic from 'next/dynamic';
+import ResetBotModal from '@/components/modals/ResetBotModal';
 import DeviationCalculator from '@/components/bots/DeviationCalculator';
 import BotState from '@/components/bots/BotState';
 import PriceHistory from '@/components/bots/PriceHistory';
@@ -91,9 +93,9 @@ export default function BotDetailPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
-  const [actionLoading, _setActionLoading] = useState<boolean>(false); // Prefix with underscore to indicate it's intentionally unused
+  const [actionLoading, setActionLoading] = useState<boolean>(false); 
   const [actionError, setActionError] = useState<string | null>(null);
-
+  const [showResetModal, setShowResetModal] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchBot = async () => {
@@ -421,12 +423,13 @@ export default function BotDetailPage() {
               
               <button
                 className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-md flex items-center justify-center"
-                onClick={() => alert('Force rebalance not implemented')}
+                onClick={() => setShowResetModal(true)}
+                disabled={actionLoading}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Force Rebalance
+                Reset Bot
               </button>
               
               <button
@@ -603,19 +606,20 @@ export default function BotDetailPage() {
                       disabled={actionLoading}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                       Sell Current Coin to Stablecoin
                     </button>
                     
                     <button
-                      className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md flex items-center justify-center"
-                      onClick={() => alert('Force rebalance not implemented')}
+                      className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
+                      onClick={() => setShowResetModal(true)}
+                      disabled={actionLoading}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                       </svg>
-                      Force Rebalance
+                      Reset Bot
                     </button>
                     
                     <button
@@ -798,6 +802,36 @@ export default function BotDetailPage() {
           </div>
         )}
       </div>
+      
+      {/* Reset Bot Modal */}
+      {bot && showResetModal && (
+        <ResetBotModal
+          show={true}
+          onHide={() => setShowResetModal(false)}
+          bot={{
+            id: bot.id,
+            name: bot.name,
+            preferredStablecoin: 'USDT' // Default to USDT as the stablecoin
+          }}
+          onSuccess={() => {
+            // Refresh bot data after reset
+            const refreshBot = async () => {
+              try {
+                setLoading(true);
+                const updatedBot = await getBot(Number(botId));
+                setBot(updatedBot);
+                setError(null);
+              } catch (err: any) {
+                console.error('Failed to refresh bot after reset:', err);
+                setError('Bot was reset but data refresh failed.');
+              } finally {
+                setLoading(false);
+              }
+            };
+            refreshBot();
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

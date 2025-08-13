@@ -162,7 +162,8 @@ export interface BotPrices {
 const handleResponse = async (response: Response) => {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Network error' }));
-    throw new Error(error.detail || `API error: ${response.status}`);
+    
+    throw new Error(error.message || error.detail || `API error: ${response.status}`);
   }
   return response.json();
 };
@@ -602,6 +603,41 @@ export async function fetchBotDeviations(
 export const fetchDeviationData = fetchBotDeviations;
 
 /**
+ * Reset a bot to its initial state
+ * @param {number} botId - ID of the bot to reset
+ * @param {Object} options - Reset options
+ * @param {string} options.resetType - Type of reset ('soft' or 'hard')
+ * @param {boolean} options.sellToStablecoin - Whether to sell to stablecoin before reset
+ * @returns {Promise<Bot>} - The updated bot
+ */
+export async function resetBot(
+  botId: number,
+  options: {
+    resetType: 'soft' | 'hard',
+    sellToStablecoin: boolean
+  } = { resetType: 'soft', sellToStablecoin: false }
+): Promise<Bot> {
+  try {
+    const response = await fetch(`${API_URL}/api/bots/${botId}/reset`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify(options)
+    });
+    
+    return handleResponse(response);
+  } catch (error: unknown) {
+    console.error(`Error resetting bot ${botId}:`, error);
+    if (error instanceof Error) {
+      throw new Error(error.message || 'Failed to reset bot');
+    }
+    throw new Error(`Failed to reset bot: ${error}`);
+  }
+}
+
+/**
  * Fetch price comparison between initial snapshot and current prices
  * @param {number} botId - ID of the bot
  * @returns {Promise<PriceComparisonData>} - Price comparison data with initial and current prices
@@ -623,9 +659,10 @@ export async function fetchPriceComparison(botId: number): Promise<PriceComparis
         ...getAuthHeader()
       }
     });
-    
+   
     return handleResponse(response);
   } catch (error: unknown) {
+    console.log('in error')
     console.error(`Error fetching price comparison data for bot ${botId}:`, error);
     if(error instanceof Error){
       throw new Error(`Failed to fetch price comparison data: ${error.message || 'Unknown error'}`);

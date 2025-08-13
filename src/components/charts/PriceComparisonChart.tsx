@@ -105,8 +105,13 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
       setLastRefreshed(new Date());
       setError(null);
     } catch (err: any) {
+      
       console.error('Error fetching price comparison:', err);
-      setError('Failed to load price comparison data');
+      if (err && err.message) {
+        setError(err.message);
+      } else {
+        setError('Failed to load price comparison data');
+      }
     }
   }, [botId]);
 
