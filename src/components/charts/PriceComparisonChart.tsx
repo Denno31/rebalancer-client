@@ -68,7 +68,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
   const [error, setError] = useState<string | null>(null);
   const [priceComparisonData, setPriceComparisonData] = useState<PriceComparisonData[]>([]);
   const [historicalData, setHistoricalData] = useState<CoinHistoricalData[]>([]);
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('table'); // Default to table view
+  const [viewMode, setViewMode] = useState<'chart' | 'cards' | 'table'>('table'); // Default to cards view
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '12h' | '24h' | '3d' | '7d' | '30d'>('24h');
   const [selectedCoin, setSelectedCoin] = useState<string>('all');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
@@ -468,16 +468,25 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
           <div className="flex border rounded-md overflow-hidden">
             <Button
               size="sm"
-              variant={viewMode === 'table' ? 'outline' : 'outline'}
+              variant={viewMode === 'cards' ? 'secondary' : 'outline'}
               className="px-2 rounded-none"
-              onClick={toggleTableView}
+              onClick={() => setViewMode('cards')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg>
+              Cards
+            </Button>
+            <Button
+              size="sm"
+              variant={viewMode === 'table' ? 'secondary' : 'outline'}
+              className="px-2 rounded-none"
+              onClick={() => setViewMode('table')}
             >
               <TableIcon size={16} className="mr-1" />
               Table
             </Button>
             <Button
               size="sm"
-              variant={viewMode === 'chart' ? 'outline' : 'outline'}
+              variant={viewMode === 'chart' ? 'secondary' : 'outline'}
               className="px-2 rounded-none"
               onClick={() => setViewMode('chart')}
             >
@@ -494,58 +503,63 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
         </div>
       )}
 
+      {/* Chart View */}
       {viewMode === 'chart' && chartData ? (
         <div className="h-96 w-full">
           <Line data={chartData} options={chartOptions} />
         </div>
-      ) : (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {priceComparisonData.map((coin) => (
-              <div key={coin.coin} className="bg-card border rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-semibold">{coin.coin}</h3>
-                  <Badge variant={coin.percentChange >= 0 ? 'outline' : 'destructive'} className={coin.percentChange >= 0 ? 'bg-green-900/20 text-green-400 border-green-800' : ''}>
-                    {formatPercentage(coin.percentChange)}
-                  </Badge>
-                </div>
-                <div className="text-2xl font-medium">{formatPrice(coin.currentPrice)}</div>
-                <div className="mt-2 flex justify-between text-xs text-muted-foreground">
-                  <span>Initial: {formatPrice(coin.initialPrice)}</span>
-                  <span>{new Date(coin.snapshotTimestamp).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+      ) : null}
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="py-2 px-4 text-left">Coin</th>
-                  <th className="py-2 px-4 text-left">Initial Price</th>
-                  <th className="py-2 px-4 text-left">Current Price</th>
-                  <th className="py-2 px-4 text-right">Change</th>
-                  <th className="py-2 px-4 text-right">Snapshot Date</th>
+      {/* Cards View */}
+      {viewMode === 'cards' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {priceComparisonData.map((coin) => (
+            <div key={coin.coin} className="bg-card border rounded-lg p-4 shadow-sm">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold">{coin.coin}</h3>
+                <Badge variant={coin.percentChange >= 0 ? 'outline' : 'destructive'} className={coin.percentChange >= 0 ? 'bg-green-900/20 text-green-400 border-green-800' : ''}>
+                  {formatPercentage(coin.percentChange)}
+                </Badge>
+              </div>
+              <div className="text-2xl font-medium">{formatPrice(coin.currentPrice)}</div>
+              <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                <span>Initial: {formatPrice(coin.initialPrice)}</span>
+                <span>{new Date(coin.snapshotTimestamp).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Table View */}
+      {viewMode === 'table' && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="py-2 px-4 text-left">Coin</th>
+                <th className="py-2 px-4 text-left">Initial Price</th>
+                <th className="py-2 px-4 text-left">Current Price</th>
+                <th className="py-2 px-4 text-right">Change</th>
+                <th className="py-2 px-4 text-right">Snapshot Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {priceComparisonData.map((coin) => (
+                <tr key={coin.coin} className="border-b hover:bg-muted/50">
+                  <td className="py-2 px-4 font-medium">{coin.coin}</td>
+                  <td className="py-2 px-4">{formatPrice(coin.initialPrice)}</td>
+                  <td className="py-2 px-4">{formatPrice(coin.currentPrice)}</td>
+                  <td className={`py-2 px-4 text-right ${getChangeClass(coin.percentChange)}`}>
+                    {formatPercentage(coin.percentChange)}
+                  </td>
+                  <td className="py-2 px-4 text-right text-muted-foreground">
+                    {new Date(coin.snapshotTimestamp).toLocaleDateString()}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {priceComparisonData.map((coin) => (
-                  <tr key={coin.coin} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-4 font-medium">{coin.coin}</td>
-                    <td className="py-2 px-4">{formatPrice(coin.initialPrice)}</td>
-                    <td className="py-2 px-4">{formatPrice(coin.currentPrice)}</td>
-                    <td className={`py-2 px-4 text-right ${getChangeClass(coin.percentChange)}`}>
-                      {formatPercentage(coin.percentChange)}
-                    </td>
-                    <td className="py-2 px-4 text-right text-muted-foreground">
-                      {new Date(coin.snapshotTimestamp).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </Card>
