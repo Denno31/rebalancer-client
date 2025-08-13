@@ -376,6 +376,7 @@ export default function BotDetailPage() {
                 { id: 'swap-decisions', label: 'Swap Decisions', icon: 'bi bi-arrow-left-right' },
                 { id: 'price-history', label: 'Price History', icon: 'bi bi-currency-exchange' },
                 { id: 'logs', label: 'Logs', icon: 'bi bi-journal-text' },
+                { id: 'assets', label: 'Assets', icon: 'bi bi-currency-exchange' },
               ].map((tab) => (
                 <button
                   key={tab.id}

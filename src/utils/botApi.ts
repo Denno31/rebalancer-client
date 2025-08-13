@@ -1,5 +1,5 @@
 import { API_URL } from './config';
-import { getAuthHeader } from './api';
+import { getAuthHeader, getBot } from './api';
 
 // Types
 export interface Bot {
@@ -210,12 +210,36 @@ export async function fetchBotPrices(botId: number): Promise<BotPrices> {
   }
 }
 
+// getBot already imported at the top
+
+/**
+ * Interface for account response structure to match old UI format
+ */
+interface AccountAsset {
+  coin?: string;
+  symbol?: string;  // Old UI used symbol
+  amount?: number;  // Old UI used amount
+  balance?: number; // New UI uses balance
+  amountInUsd?: number;
+  id?: number;
+}
+
 /**
  * Fetch assets for a specific bot
+ * Uses the account endpoint to align with the old UI's fetchAvailableCoins approach
  */
 export async function fetchBotAssets(botId: number): Promise<Asset[]> {
   try {
-    const response = await fetch(`${API_URL}/api/bots/${botId}/assets`, {
+    // First get the bot to retrieve its accountId
+    const bot = await getBot(botId);
+    
+    if (!bot || !bot.accountId) {
+      console.error(`Bot ${botId} not found or missing accountId`);
+      return [];
+    }
+    
+    // Now fetch coins from the account endpoint
+    const response = await fetch(`${API_URL}/api/accounts/${bot.accountId}/coins`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -223,7 +247,19 @@ export async function fetchBotAssets(botId: number): Promise<Asset[]> {
       }
     });
     
-    return handleResponse(response);
+    const data = await handleResponse(response);
+    
+    // If the response has an availableCoins property (like old UI format),
+    // use that, otherwise assume the response is already the correct format
+    const accountAssets: AccountAsset[] = data.availableCoins || data;
+    
+    // Convert from AccountAsset format to Asset format
+    return accountAssets.map(asset => ({
+      coin: asset.coin || asset.symbol || '',
+      balance: asset.balance || asset.amount || 0,
+      botId: botId,
+      id: asset.id
+    }));
   } catch (error: unknown) {
     console.error(`Error fetching assets for bot ${botId}:`, error);
     return []; // Return empty array on error

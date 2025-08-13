@@ -87,6 +87,9 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
   }), []);
 
   // Define data loading functions outside useEffect to prevent recreating them on every render
+  // Flag to track if data is currently being silently refreshed
+  const [isSilentRefresh, setIsSilentRefresh] = useState<boolean>(false);
+
   const loadPriceComparison = useCallback(async () => {
     if (!botId) return;
     
@@ -151,9 +154,13 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
     
     let isMounted = true;
     
-    const loadData = async () => {
+    const loadData = async (silent = false) => {
       if (!isMounted) return;
-      setLoading(true);
+      
+      // Only show loading state if not in silent refresh mode
+      if (!silent) {
+        setLoading(true);
+      }
       
       try {
         // Load both data sources in parallel
@@ -176,7 +183,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
     // Set up auto-refresh
     let refreshTimer: NodeJS.Timeout | null = null;
     if (autoRefresh) {
-      refreshTimer = setInterval(loadData, 60000); // Refresh every minute
+      refreshTimer = setInterval(() => loadData(true), 60000); // Silent refresh every minute
     }
 
     // Cleanup function
@@ -353,15 +360,25 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
     setAutoRefresh(checked);
   }, []);
 
-  const manualRefresh = useCallback(() => {
-    setLoading(true);
+  // Refresh data with optional silent mode
+  const manualRefresh = useCallback((silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
+    
     Promise.all([
       loadPriceComparison(),
       loadHistoricalComparison()
     ]).finally(() => {
       setLoading(false);
+      setLastRefreshed(new Date());
     });
   }, [loadPriceComparison, loadHistoricalComparison]);
+  
+  // Silent refresh that updates data without showing loading spinner
+  const silentRefresh = useCallback(() => {
+    manualRefresh(true);
+  }, [manualRefresh]);
 
   if (loading) {
     return (
@@ -460,9 +477,14 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
             </label>
           </div>
 
-          <Button size="sm" variant="outline" onClick={manualRefresh}>
+          <Button size="sm" variant="outline" onClick={() => manualRefresh(false)}>
             <RefreshCw size={16} className="mr-1" />
             Refresh
+          </Button>
+          
+          <Button size="sm" variant="secondary" onClick={() => silentRefresh()}>
+            <RefreshCw size={16} className="mr-1" />
+            Quick Refresh
           </Button>
 
           <div className="flex border rounded-md overflow-hidden">
