@@ -161,7 +161,7 @@ export default function BotDetailPage() {
     return (
       <DashboardLayout>
         <div className="p-6">
-          <Card className="p-6">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
             <h1 className="text-2xl font-bold mb-4">Error</h1>
             <p className="text-red-400 mb-6">{error || 'Bot not found'}</p>
             <Link 
@@ -170,7 +170,7 @@ export default function BotDetailPage() {
             >
               Back to All Bots
             </Link>
-          </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -377,21 +377,24 @@ export default function BotDetailPage() {
             </div>
           </div>
         </div> 
-        {/* Tab Navigation and Quick Actions */}
-        <div className="mb-6 flex flex-col sm:flex-row gap-4">
-          {/* Navigation Tabs */}
-          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md flex-1 overflow-hidden">
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md overflow-hidden">
             <div className="flex border-b border-gray-700 overflow-x-auto">
               {[
                 { id: 'overview', label: 'Overview', icon: 'bi bi-grid' },
-                { id: 'deviation', label: 'Deviation Chart', icon: 'bi bi-graph-up' },
+                { id: 'deviation-chart', label: 'Deviation Chart', icon: 'bi bi-graph-up' },
                 { id: 'price-movement', label: 'Price Movement', icon: 'bi bi-graph-up-arrow' },
                 { id: 'trades', label: 'Trade History', icon: 'bi bi-clock-history' },
                 { id: 'swap-decisions', label: 'Swap Decisions', icon: 'bi bi-arrow-left-right' },
                 { id: 'price-history', label: 'Price History', icon: 'bi bi-currency-exchange' },
                 { id: 'logs', label: 'Logs', icon: 'bi bi-journal-text' },
                 { id: 'assets', label: 'Assets', icon: 'bi bi-currency-exchange' },
-              ].map((tab) => (
+                { id: 'state', label: 'Bot State', icon: 'bi bi-cpu' },
+                { id: 'performance', label: 'Performance', icon: 'bi bi-bar-chart' },
+                { id: 'deviation-calculator', label: 'Deviation Calculator', icon: 'bi bi-graph-up' },
+
+              ].map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
@@ -405,65 +408,70 @@ export default function BotDetailPage() {
               ))}
             </div>
           </div>
-          
-          {/* Quick Actions */}
-          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4">
-            <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
-                onClick={() => {
-                  const stablecoin = window.confirm('Choose a stablecoin:\n- OK for USDT\n- Cancel for USDC') ? 'USDT' : 'USDC';
-                  const amount = prompt(`Enter amount to sell (or 'max' for all):`, 'max');
-                  if (amount) {
-                    if (window.confirm(`Sell ${amount} ${bot.currentCoin || bot.initialCoin || 'current coin'} to ${stablecoin}?`)) {
-                      sellToStablecoin(bot.id, bot.currentCoin || bot.initialCoin || '', amount, stablecoin)
-                        .then(() => {
-                          alert('Sell successful!');
-                          window.location.reload();
-                        })
-                        .catch(err => alert(`Error: ${err.message || 'Unknown error'}`));
-                    }
-                  }
-                }}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-                Sell Current Coin
-              </button>
-              
-              <button
-                className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
-                onClick={() => setShowResetModal(true)}
-                disabled={actionLoading}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Reset Bot
-              </button>
-              
-              <button
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-md flex items-center justify-center"
-                onClick={() => alert('View API credentials not implemented')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                View API Credentials
-              </button>
-            </div>
-          </div>
         </div>
         
         {/* Main Content based on selected tab */}
-        <div className="bg-[#121616] rounded-md p-6">
-          {activeTab === 'overview' && (
-            <div>
+        {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Quick Actions - Moved from overview tab */}
+              <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4">
+                <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
+                    onClick={() => {
+                      const stablecoin = window.confirm('Choose a stablecoin:\n- OK for USDT\n- Cancel for USDC') ? 'USDT' : 'USDC';
+                      const amount = prompt(`Enter amount to sell (or 'max' for all):`, 'max');
+                      if (amount) {
+                        if (window.confirm(`Sell ${amount} ${bot.currentCoin || bot.initialCoin || 'current coin'} to ${stablecoin}?`)) {
+                          sellToStablecoin(bot.id, bot.currentCoin || bot.initialCoin || '', amount, stablecoin)
+                            .then(() => {
+                              alert('Sell successful!');
+                              window.location.reload();
+                            })
+                            .catch(err => {
+                              console.error('Error selling to stablecoin:', err);
+                              alert(`Error: ${err.message || 'Failed to sell'}`);
+                            });
+                        }
+                      }
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    Sell Current Coin
+                  </button>
+                  
+                  <button
+                    className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
+                    onClick={() => setShowResetModal(true)}
+                    disabled={actionLoading}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset Bot
+                  </button>
+                  
+                  <button
+                    className="px-4 py-2 bg-[#1E2329] border border-[#f0b90b] hover:bg-[#f0b90b]/10 text-[#f0b90b] rounded-md flex items-center justify-center"
+                    onClick={() => {
+                      // View API Credentials - to be implemented
+                      alert('API credentials functionality coming soon.');
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View API Credentials
+                  </button>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card  className="h-full">
+                <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 h-full">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
                     <div>
                       <h4 className="text-gray-400 text-sm mb-1">ID</h4>
@@ -538,9 +546,9 @@ export default function BotDetailPage() {
                       </p>
                     </div>
                   </div>
-                </Card>
+                </div>
             
-                <Card  className="h-full">
+                <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 h-full">
                   <div>
                     <p className="text-gray-400 text-sm mb-3">
                       The bot will trade between these coins based on price movements:
@@ -565,9 +573,9 @@ export default function BotDetailPage() {
                       )}
                     </div>
                   </div>
-                </Card>
+                </div>
 
-                <Card  className="h-full">
+                <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 h-full">
                   {bot.state ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {Object.entries(bot.state).map(([key, value]) => {
@@ -595,9 +603,9 @@ export default function BotDetailPage() {
                       <p className="text-gray-400">No state information available</p>
                     </div>
                   )}
-                </Card>
+                </div>
 
-                <Card  className="h-full">
+                <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 h-full">
                   <div className="grid grid-cols-1 gap-4">
                     <button
                       className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"
@@ -606,7 +614,7 @@ export default function BotDetailPage() {
                         const amount = prompt(`Enter amount to sell (or 'max' for all):`, 'max');
                         if (amount) {
                           if (window.confirm(`Sell ${amount} ${bot.currentCoin || bot.initialCoin || 'current coin'} to ${stablecoin}?`)) {
-                            sellToStablecoin(bot.id, bot.currentCoin || bot.initialCoin || '', amount, stablecoin)
+                            sellToStablecoin(bot?.id ?? 0, bot?.currentCoin || bot?.initialCoin || '', amount, stablecoin)
                               .then(() => {
                                 alert('Sell successful!');
                                 window.location.reload();
@@ -638,7 +646,7 @@ export default function BotDetailPage() {
                       className={`px-4 py-3 text-white rounded-md flex items-center justify-center ${bot.enabled ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}
                       onClick={() => {
                         if (window.confirm(`Are you sure you want to ${bot.enabled ? 'disable' : 'enable'} this bot?`)) {
-                          toggleBotStatus(bot.id, !bot.enabled)
+                          toggleBotStatus(bot?.id ?? 0, !bot?.enabled)
                             .then(() => {
                               alert(`Bot ${bot.enabled ? 'disabled' : 'enabled'} successfully!`);
                               window.location.reload();
@@ -651,103 +659,132 @@ export default function BotDetailPage() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                       </svg>
-                      {bot.enabled ? 'Disable Bot' : 'Enable Bot'}
+                      {bot?.enabled ? 'Disable Bot' : 'Enable Bot'}
                     </button>
                   </div>
-                </Card>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 h-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6">
+                    <div>
+                      <h4 className="text-gray-400 text-sm mb-1">ID</h4>
+                      <p className="text-white font-medium">{bot?.id}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-gray-400 text-sm mb-1">Current Coin</h4>
+                      <p className="text-white font-medium text-lg">
+                        {bot?.currentCoin || bot?.initialCoin || 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-gray-400 text-sm mb-1">Account</h4>
+                      <p className="text-white font-medium">
+                        {bot?.accountId ? `Account #${bot.accountId}` : 'Not set'}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="text-gray-400 text-sm mb-1">Description</h4>
+                      <p className="text-white font-medium">
+                        {bot?.description || 'No description'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-        
-        {activeTab === 'trades' && (
-          <div className="space-y-6">
-            <Card className="p-6">
-              <h2 className="text-xl font-bold mb-4">Trade History</h2>
-              <TradeHistory botId={botId} />
-            </Card>
-          </div>
         )}
         
-        {activeTab === 'deviation' && (
+        {activeTab === 'deviation-chart' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Deviation Chart</h2>
               <DeviationChart botId={Number(botId)} />
-            </Card>
+            </div>
           </div>
         )}
-        
+
         {activeTab === 'price-movement' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Price Movement</h2>
               <PriceComparisonChart botId={Number(botId)} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'trade-decisions' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <TradeDecisions botId={botId} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'swap-decisions' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <SwapDecisions botId={botId} />
-            </Card>
+            </div>
+          </div>
+        )}
+        
+        {activeTab === 'trades' && (
+          <div className="space-y-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
+              <TradeHistory botId={botId} />
+            </div>
           </div>
         )}
         
         {activeTab === 'assets' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <BotAssets botId={botId} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'logs' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <BotLogs botId={botId} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'deviation-calculator' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <DeviationCalculator botId={botId} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'state' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <BotState botId={botId} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'price-history' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <PriceHistory botId={botId} />
-            </Card>
+            </div>
           </div>
         )}
         
         {activeTab === 'performance' && (
           <div className="space-y-6">
-            <Card className="p-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold mb-4">Performance</h2>
               
               {/* Charts - To be implemented */}
-              <div className="bg-[#121616] rounded-md p-6 text-center">
+              <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 text-center">
                 <p className="text-gray-400">Performance charts will be displayed here</p>
                 <p className="text-sm text-gray-500 mt-2">This feature is coming soon</p>
               </div>
@@ -756,52 +793,52 @@ export default function BotDetailPage() {
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Bot Name</h4>
-                  <p className="text-white font-medium">{bot.name}</p>
+                  <p className="text-white font-medium">{bot?.name || 'Unnamed Bot'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Status</h4>
                   <p className="text-white font-medium flex items-center">
-                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${bot.enabled ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    {bot.enabled ? 'Active' : 'Inactive'}
+                    <span className={`inline-block w-3 h-3 rounded-full mr-2 ${bot?.enabled ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                    {bot?.enabled ? 'Active' : 'Inactive'}
                   </p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Exchange</h4>
-                  <p className="text-white font-medium">{bot.exchangeName || 'N/A'}</p>
+                  <p className="text-white font-medium">{bot?.exchangeName || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Account ID</h4>
-                  <p className="text-white font-medium">{bot.accountId || 'N/A'}</p>
+                  <p className="text-white font-medium">{bot?.accountId || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Initial Coin</h4>
-                  <p className="text-white font-medium">{bot.initialCoin || 'N/A'}</p>
+                  <p className="text-white font-medium">{bot?.initialCoin || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Current Coin</h4>
-                  <p className="text-white font-medium">{bot.currentCoin || bot.initialCoin || 'N/A'}</p>
+                  <p className="text-white font-medium">{bot?.currentCoin || bot?.initialCoin || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Threshold</h4>
-                  <p className="text-white font-medium">{formatPercentage(bot.thresholdPercentage) || 'N/A'}</p>
+                  <p className="text-white font-medium">{formatPercentage(bot?.thresholdPercentage) || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Check Interval</h4>
-                  <p className="text-white font-medium">{bot.checkInterval || 'N/A'} mins</p>
+                  <p className="text-white font-medium">{bot?.checkInterval || 'N/A'} mins</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Created At</h4>
-                  <p className="text-white font-medium">{bot.createdAt ? new Date(bot.createdAt).toLocaleString() : 'N/A'}</p>
+                  <p className="text-white font-medium">{bot?.createdAt ? new Date(bot.createdAt).toLocaleString() : 'N/A'}</p>
                 </div>
                 <div>
                   <h4 className="text-gray-400 text-sm mb-1">Updated At</h4>
-                  <p className="text-white font-medium">{bot.updatedAt ? new Date(bot.updatedAt).toLocaleString() : 'N/A'}</p>
+                  <p className="text-white font-medium">{bot?.updatedAt ? new Date(bot.updatedAt).toLocaleString() : 'N/A'}</p>
                 </div>
               </div>
               
               <div className="pt-6 border-t border-gray-700">
                 <Link 
-                  href={`/bots/${bot.id}/edit`}
+                  href={`/bots/${bot?.id}/edit`}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 inline-flex items-center"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -810,7 +847,7 @@ export default function BotDetailPage() {
                   Edit Bot Settings
                 </Link>
               </div>
-            </Card>
+            </div>
           </div>
         )}
       </div>
@@ -821,8 +858,8 @@ export default function BotDetailPage() {
           show={true}
           onHide={() => setShowResetModal(false)}
           bot={{
-            id: bot.id,
-            name: bot.name,
+            id: bot?.id ?? 0, // Use nullish coalescing for type safety
+            name: bot?.name ?? '', // Use nullish coalescing for type safety
             preferredStablecoin: 'USDT' // Default to USDT as the stablecoin
           }}
           onSuccess={() => {
@@ -845,5 +882,5 @@ export default function BotDetailPage() {
         />
       )}
     </DashboardLayout>
-  );
+  )
 }
