@@ -22,6 +22,7 @@ export interface Asset {
   coin: string;
   balance: number;
   botName?: string;
+  amountInUsd?: number;
 }
 
 export interface Trade {
@@ -81,6 +82,7 @@ export interface BotAsset {
   usdtValue: number;
   percentage: number;
   lastUpdate: string;
+  amountInUsd?: number;
 }
 
 export interface LogEntry {
@@ -219,7 +221,7 @@ export async function fetchBotPrices(botId: number): Promise<BotPrices> {
 interface AccountAsset {
   coin?: string;
   symbol?: string;  // Old UI used symbol
-  amount?: number;  // Old UI used amount
+  amount: number;  // Old UI used amount
   balance?: number; // New UI uses balance
   amountInUsd?: number;
   id?: number;
@@ -257,9 +259,10 @@ export async function fetchBotAssets(botId: number): Promise<Asset[]> {
     // Convert from AccountAsset format to Asset format
     return accountAssets.map(asset => ({
       coin: asset.coin || asset.symbol || '',
-      balance: asset.balance || asset.amount || 0,
+      balance:  asset.amount,
       botId: botId,
-      id: asset.id
+      id: asset.id,
+      amountInUsd: asset.amountInUsd || 0
     }));
   } catch (error: unknown) {
     console.error(`Error fetching assets for bot ${botId}:`, error);

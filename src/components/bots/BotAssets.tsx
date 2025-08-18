@@ -16,6 +16,8 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
   const [error, setError] = useState<string | null>(null);
   const [assets, setAssets] = useState<BotAsset[]>([]);
   const [totalValue, setTotalValue] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<string>('percentage');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const loadBotAssets = async () => {
@@ -28,19 +30,19 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
         
         if (apiData && apiData.length > 0) {
           // Transform API Asset[] to BotAsset[] format
-          const transformedAssets: BotAsset[] = apiData.map(asset => {
+          const transformedAssets = apiData.map(asset => {
             // Calculate the total value for percentage calculation
             const totalBalance = apiData.reduce((sum, a) => sum + a.balance, 0);
             
             return {
               coin: asset.coin,
               amount: asset.balance,
-              usdtValue: asset.balance * 1, // Assuming 1:1 for simplicity, would need actual rates
+              usdtValue: asset?.amountInUsd || 0, // Assuming 1:1 for simplicity, would need actual rates
               percentage: (asset.balance / totalBalance) * 100,
               lastUpdate: new Date().toISOString()
             };
           });
-          
+          console.log({transformedAssets})
           setAssets(transformedAssets);
           const total = transformedAssets.reduce((sum, asset) => sum + asset.usdtValue, 0);
           setTotalValue(total);
@@ -79,6 +81,36 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
   const formatTimestamp = (timestamp: string) => {
     return new Date(timestamp).toLocaleString();
   };
+  
+  // Handle sorting change
+  const handleSortChange = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('desc'); // Default to descending when changing columns
+    }
+  };
+  
+  // Sort assets based on current sort settings
+  const sortedAssets = [...assets].sort((a, b) => {
+    let valA: any = a[sortBy as keyof BotAsset];
+    let valB: any = b[sortBy as keyof BotAsset];
+    
+    // Handle numeric sorting
+    if (typeof valA === 'number' && typeof valB === 'number') {
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    }
+    
+    // Handle string sorting
+    if (typeof valA === 'string' && typeof valB === 'string') {
+      return sortDirection === 'asc' ? 
+        valA.localeCompare(valB) : 
+        valB.localeCompare(valA);
+    }
+    
+    return 0;
+  });
 
   if (loading) {
     return (
@@ -112,7 +144,7 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
       ) : (
         <>
           {/* Assets Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {assets.map((asset) => (
               <div key={asset.coin} className="bg-gray-800 rounded-md p-4">
                 <div className="flex justify-between items-center mb-2">
@@ -139,27 +171,72 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
                 </div>
               </div>
             ))}
-          </div>
+          </div> */}
 
           {/* Assets Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="py-3 px-4 text-gray-400 font-medium">Coin</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Amount</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Value (USDT)</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Portfolio %</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Last Updated</th>
+          <div className="overflow-x-auto rounded-md border border-gray-700">
+            <table className="w-full table-auto">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('coin')}>
+                    <div className="flex items-center">
+                      Coin
+                      {sortBy === 'coin' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('amount')}>
+                    <div className="flex items-center">
+                      Amount
+                      {sortBy === 'amount' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('usdtValue')}>
+                    <div className="flex items-center">
+                      Value (USDT)
+                      {sortBy === 'usdtValue' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('percentage')}>
+                    <div className="flex items-center">
+                      Portfolio %
+                      {sortBy === 'percentage' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('lastUpdate')}>
+                    <div className="flex items-center">
+                      Last Updated
+                      {sortBy === 'lastUpdate' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
                 </tr>
               </thead>
-              <tbody>
-                {assets.map((asset) => (
-                  <tr key={asset.coin} className="border-b border-gray-800">
-                    <td className="py-3 px-4 font-medium">{asset.coin}</td>
-                    <td className="py-3 px-4">{formatCryptoAmount(asset.amount, asset.coin)}</td>
-                    <td className="py-3 px-4">{formatCurrency(asset.usdtValue)}</td>
-                    <td className="py-3 px-4">
+              <tbody className="divide-y divide-gray-700 bg-gray-900/50">
+                {sortedAssets.length > 0 ? sortedAssets.map((asset) => (
+                  <tr key={asset.coin} className="hover:bg-gray-700/50 transition-colors duration-150">
+                    <td className="px-4 py-3 text-sm font-medium text-blue-400">{asset.coin}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{formatCryptoAmount(asset.amount, asset.coin)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{formatCurrency(asset.usdtValue)}</td>
+                    <td className="px-4 py-3">
                       <div className="flex items-center">
                         <div className="w-16 h-2 bg-gray-700 rounded-full overflow-hidden mr-2">
                           <div 
@@ -170,9 +247,15 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
                         {formatPercentage(asset.percentage)}
                       </div>
                     </td>
-                    <td className="py-3 px-4">{formatTimestamp(asset.lastUpdate)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{formatTimestamp(asset.lastUpdate)}</td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-6 text-center text-gray-400">
+                      No assets found for this bot
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

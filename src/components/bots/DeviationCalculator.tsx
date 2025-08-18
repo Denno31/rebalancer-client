@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchBotCoins } from '@/utils/botApi';
 
 // Temporary implementation of fetchCoinPrice until API is available
@@ -59,6 +60,8 @@ const DeviationCalculator: React.FC<DeviationCalculatorProps> = ({ botId }) => {
   const [fromPrice, setFromPrice] = useState<string>('');
   const [toPrice, setToPrice] = useState<string>('');
   const [deviation, setDeviation] = useState<number | null>(null);
+  const [sortColumn, setSortColumn] = useState<string>('timestamp');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [calculationHistory, setCalculationHistory] = useState<Array<{
     fromCoin: string;
     toCoin: string;
@@ -216,6 +219,17 @@ const DeviationCalculator: React.FC<DeviationCalculatorProps> = ({ botId }) => {
     setCalculationHistory([]);
   };
 
+  const handleSortChange = useCallback((column: string) => {
+    setSortColumn(prev => {
+      if (prev === column) {
+        setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        return column;
+      }
+      setSortDirection('asc');
+      return column;
+    });
+  }, []);
+
   return (
     <div className="space-y-8">
       <div>
@@ -369,30 +383,127 @@ const DeviationCalculator: React.FC<DeviationCalculatorProps> = ({ botId }) => {
           </div>
           
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="border-b border-gray-700">
-                  <th className="py-3 px-4 text-gray-400 font-medium">Time</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">From</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">To</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">From Price</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">To Price</th>
-                  <th className="py-3 px-4 text-gray-400 font-medium">Deviation</th>
+            <table className="w-full table-auto">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th 
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSortChange('timestamp')}
+                  >
+                    <div className="flex items-center">
+                      <span>Time</span>
+                      {sortColumn === 'timestamp' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSortChange('fromCoin')}
+                  >
+                    <div className="flex items-center">
+                      <span>From</span>
+                      {sortColumn === 'fromCoin' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSortChange('toCoin')}
+                  >
+                    <div className="flex items-center">
+                      <span>To</span>
+                      {sortColumn === 'toCoin' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSortChange('fromPrice')}
+                  >
+                    <div className="flex items-center">
+                      <span>From Price</span>
+                      {sortColumn === 'fromPrice' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSortChange('toPrice')}
+                  >
+                    <div className="flex items-center">
+                      <span>To Price</span>
+                      {sortColumn === 'toPrice' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                    onClick={() => handleSortChange('deviation')}
+                  >
+                    <div className="flex items-center justify-end">
+                      <span>Deviation</span>
+                      {sortColumn === 'deviation' && (
+                        <span className="ml-1">
+                          {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </span>
+                      )}
+                    </div>
+                  </th>
                 </tr>
               </thead>
-              <tbody>
-                {calculationHistory.map((calc, index) => (
-                  <tr key={index} className="border-b border-gray-800">
-                    <td className="py-3 px-4">{formatTimestamp(calc.timestamp)}</td>
-                    <td className="py-3 px-4">{calc.fromCoin}</td>
-                    <td className="py-3 px-4">{calc.toCoin}</td>
-                    <td className="py-3 px-4">${calc.fromPrice.toFixed(2)}</td>
-                    <td className="py-3 px-4">${calc.toPrice.toFixed(2)}</td>
-                    <td className={`py-3 px-4 ${calc.deviation >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                      {formatPercentage(calc.deviation)}
+              <tbody className="bg-gray-900 divide-y divide-gray-800">
+                {calculationHistory
+                  .sort((a, b) => {
+                    const aValue = a[sortColumn as keyof typeof a];
+                    const bValue = b[sortColumn as keyof typeof b];
+                    
+                    if (aValue === null || aValue === undefined) return 1;
+                    if (bValue === null || bValue === undefined) return -1;
+                    
+                    if (typeof aValue === 'string' && typeof bValue === 'string') {
+                      return sortDirection === 'asc' 
+                        ? aValue.localeCompare(bValue) 
+                        : bValue.localeCompare(aValue);
+                    } else {
+                      return sortDirection === 'asc' 
+                        ? (aValue < bValue ? -1 : 1) 
+                        : (bValue < aValue ? -1 : 1);
+                    }
+                  })
+                  .map((calc, index) => (
+                    <tr key={index} className="hover:bg-gray-800/50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">{formatTimestamp(calc.timestamp)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{calc.fromCoin}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">{calc.toCoin}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">${calc.fromPrice.toFixed(2)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap">${calc.toPrice.toFixed(2)}</td>
+                      <td className={`px-4 py-3 text-right whitespace-nowrap ${calc.deviation >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {formatPercentage(calc.deviation)}
+                      </td>
+                    </tr>
+                ))}
+                {calculationHistory.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                      No calculation history available
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

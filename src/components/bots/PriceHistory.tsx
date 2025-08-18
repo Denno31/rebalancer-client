@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { ChevronUp, ChevronDown } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -39,6 +40,8 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
   const [priceData, setPriceData] = useState<PricePoint[]>([]);
   const [coins, setCoins] = useState<string[]>([]);
   const [selectedCoin, setSelectedCoin] = useState<string | null>(null); // No default selection
+  const [sortColumn, setSortColumn] = useState<string>('timestamp');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [timeRange, setTimeRange] = useState<string>('24h'); // '24h', '7d', '30d', '90d'
   const [viewMode, setViewMode] = useState<'chart' | 'table'>('table'); // Default to table view as in legacy
   const chartRef = useRef(null);
@@ -171,6 +174,17 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'chart' ? 'table' : 'chart');
   };
+
+  const handleSortChange = useCallback((column: string) => {
+    setSortColumn(prev => {
+      if (prev === column) {
+        setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        return column;
+      }
+      setSortDirection('asc');
+      return column;
+    });
+  }, []);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -436,26 +450,105 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto bg-gray-800 rounded-md">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="border-b border-gray-700">
-                    <th className="py-3 px-4 text-gray-400 font-medium">Time</th>
-                    <th className="py-3 px-4 text-gray-400 font-medium">Coin</th>
-                    <th className="py-3 px-4 text-gray-400 font-medium">Price</th>
-                    <th className="py-3 px-4 text-gray-400 font-medium">Source</th>
+            <div className="overflow-x-auto">
+              <table className="w-full table-auto">
+                <thead className="bg-gray-800">
+                  <tr>
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                      onClick={() => handleSortChange('timestamp')}
+                    >
+                      <div className="flex items-center">
+                        <span>Time</span>
+                        {sortColumn === 'timestamp' && (
+                          <span className="ml-1">
+                            {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                      onClick={() => handleSortChange('coin')}
+                    >
+                      <div className="flex items-center">
+                        <span>Coin</span>
+                        {sortColumn === 'coin' && (
+                          <span className="ml-1">
+                            {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                      onClick={() => handleSortChange('price')}
+                    >
+                      <div className="flex items-center">
+                        <span>Price</span>
+                        {sortColumn === 'price' && (
+                          <span className="ml-1">
+                            {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                      onClick={() => handleSortChange('source')}
+                    >
+                      <div className="flex items-center">
+                        <span>Source</span>
+                        {sortColumn === 'source' && (
+                          <span className="ml-1">
+                            {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {/* Show the most recent prices first */}
-                  {[...relevantPriceData].reverse().slice(0, 100).map((data, index) => (
-                    <tr key={index} className="border-b border-gray-800 hover:bg-gray-700/50">
-                      <td className="py-3 px-4">{formatTimestamp(data.timestamp)}</td>
-                      <td className="py-3 px-4">{data.coin}</td>
-                      <td className="py-3 px-4 font-medium">{formatCurrency(data.price)}</td>
-                      <td className="py-3 px-4 text-gray-400">{data.source || 'N/A'}</td>
+                <tbody className="bg-gray-900 divide-y divide-gray-800">
+                  {relevantPriceData
+                    .sort((a, b) => {
+                      let aValue = a[sortColumn as keyof typeof a];
+                      let bValue = b[sortColumn as keyof typeof b];
+                      
+                      if (aValue === null || aValue === undefined) return 1;
+                      if (bValue === null || bValue === undefined) return -1;
+                      
+                      // Handle case when source might be undefined
+                      if (sortColumn === 'source') {
+                        aValue = aValue || 'N/A';
+                        bValue = bValue || 'N/A';
+                      }
+                      
+                      if (typeof aValue === 'string' && typeof bValue === 'string') {
+                        return sortDirection === 'asc' 
+                          ? aValue.localeCompare(bValue) 
+                          : bValue.localeCompare(aValue);
+                      } else {
+                        return sortDirection === 'asc' 
+                          ? (aValue < bValue ? -1 : 1) 
+                          : (bValue < aValue ? -1 : 1);
+                      }
+                    })
+                    .slice(0, 100)
+                    .map((data, index) => (
+                      <tr key={index} className="hover:bg-gray-800/50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">{formatTimestamp(data.timestamp)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap">{data.coin}</td>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium">{formatCurrency(data.price)}</td>
+                        <td className="px-4 py-3 whitespace-nowrap text-gray-400">{data.source || 'N/A'}</td>
+                      </tr>
+                    ))}
+                  {relevantPriceData.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                        No price history data available {selectedCoin ? `for ${selectedCoin}` : ''}
+                      </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
               {relevantPriceData.length > 100 && (

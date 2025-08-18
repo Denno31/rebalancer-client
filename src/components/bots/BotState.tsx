@@ -13,7 +13,9 @@ interface BotStateProps {
 const BotState: React.FC<BotStateProps> = ({ botId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [state, setState] = useState<BotStateData | null>(null);
+  const [botState, setBotState] = useState<BotStateData | null>(null);
+  const [sortBy, setSortBy] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   useEffect(() => {
     const loadBotState = async () => {
@@ -22,7 +24,7 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
         setError(null);
         
         const data = await fetchBotState(Number(botId));
-        setState(data);
+        setBotState(data);
       } catch (err: any) {
         console.error('Failed to fetch bot state:', err);
         setError(`Failed to load bot state: ${err.message || 'Unknown error'}`);
@@ -52,8 +54,75 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
   };
 
   const formatDateTime = (timestamp: string | null) => {
+    const formatTimestamp = (timestamp: string) => {
+      return new Date(timestamp).toLocaleString();
+    };
+    
     if (!timestamp) return 'Never';
-    return new Date(timestamp).toLocaleString();
+    return formatTimestamp(timestamp);
+  };
+
+  // Handle sorting change
+  const handleSortChange = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('asc'); // Default to ascending when changing columns
+    }
+  };
+  
+  // Prepare data for the state table
+  const getStateTableData = () => {
+    if (!botState) return [];
+    
+    // Create an array of state properties to display in the table
+    const stateData = Object.entries(botState)
+      .filter(([key]) => {
+        // Exclude certain fields from the table display
+        const excludedFields = ['id', 'botId', 'createdAt', 'updatedAt', 'currentPrice'];
+        return !excludedFields.includes(key);
+      })
+      .map(([key, value]) => {
+        return {
+          name: key,
+          value: value,
+          displayValue: formatStateValue(key, value)
+        };
+      });
+      
+    // Sort the state data
+    return stateData.sort((a, b) => {
+      const valA = a[sortBy as keyof typeof a];
+      const valB = b[sortBy as keyof typeof b];
+      
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return sortDirection === 'asc' ? 
+          valA.localeCompare(valB) : 
+          valB.localeCompare(valA);
+      }
+      
+      return 0;
+    });
+  };
+  
+  // Format state values for display
+  const formatStateValue = (key: string, value: any) => {
+    if (value === null || value === undefined) return 'N/A';
+    
+    if (key.includes('At') && typeof value === 'string') {
+      return formatDateTime(value);
+    } else if (typeof value === 'boolean') {
+      return value ? 'Yes' : 'No';
+    } else if (typeof value === 'number') {
+      if (key.includes('Price') || key.includes('Value')) {
+        return formatCurrency(value);
+      } else if (key.includes('Percentage') || key.includes('Deviation')) {
+        return `${value.toFixed(2)}%`;
+      }
+    }
+    
+    return String(value);
   };
 
   const getStatusBadge = (status: string) => {
@@ -85,7 +154,7 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
     );
   }
 
-  if (!state) {
+  if (!botState) {
     return (
       <div className="text-center py-10 text-gray-400">
         No state information available
@@ -101,7 +170,7 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
           <h2 className="text-xl font-bold">Bot State</h2>
           <div className="flex items-center space-x-2">
             <span>Status:</span>
-            {getStatusBadge(state.status)}
+            {getStatusBadge(botState.status)}
           </div>
         </div>
         
@@ -111,15 +180,15 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
             <h3 className="text-gray-400 text-sm mb-2">Current Holding</h3>
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center mr-3">
-                {state.currentCoin.substring(0, 1)}
+                {botState.currentCoin.substring(0, 1)}
               </div>
               <div>
-                <div className="font-bold text-lg">{state.currentCoin}</div>
-                <div className="text-sm">{formatCryptoAmount(state.currentCoinAmount, state.currentCoin)}</div>
+                <div className="font-bold text-lg">{botState.currentCoin}</div>
+                <div className="text-sm">{formatCryptoAmount(botState.currentCoinAmount, botState.currentCoin)}</div>
               </div>
             </div>
             <div className="mt-2 text-right text-blue-400 font-medium">
-              {formatCurrency(state.currentCoinValueUsd)}
+              {formatCurrency(botState.currentCoinValueUsd)}
             </div>
           </div>
 
@@ -127,12 +196,12 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
           <div className="bg-gray-700/30 rounded-lg p-4">
             <h3 className="text-gray-400 text-sm mb-2">Profit/Loss</h3>
             <div className="font-bold text-2xl mb-1 flex items-center">
-              <span className={state.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}>
-                {formatCurrency(state.profitLoss)}
+              <span className={botState.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'}>
+                {formatCurrency(botState.profitLoss)}
               </span>
             </div>
-            <div className={`text-sm ${state.profitLossPercentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              {formatPercentage(state.profitLossPercentage)} from initial investment
+            <div className={`text-sm ${botState.profitLossPercentage >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {formatPercentage(botState.profitLossPercentage)} from initial investment
             </div>
           </div>
 
@@ -140,39 +209,95 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
           <div className="bg-gray-700/30 rounded-lg p-4">
             <h3 className="text-gray-400 text-sm mb-2">Total Value</h3>
             <div className="font-bold text-2xl mb-1">
-              {formatCurrency(state.totalValueUsd)}
+              {formatCurrency(botState.totalValueUsd)}
             </div>
             <div className="text-sm text-gray-400">
-              Initial: {formatCurrency(state.initialInvestment)}
+              Initial: {formatCurrency(botState.initialInvestment)}
             </div>
           </div>
         </div>
       </div>
       
+      {/* Bot State Details */}
+      {botState && (
+        <div className="mt-6 bg-gray-900/50 rounded-xl p-4 shadow-lg">
+          <h3 className="text-xl font-medium mb-4">Bot State Details</h3>
+          
+          <div className="overflow-x-auto rounded-md border border-gray-700">
+            <table className="w-full table-auto">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('name')}>
+                    <div className="flex items-center">
+                      Property
+                      {sortBy === 'name' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('value')}>
+                    <div className="flex items-center">
+                      Value
+                      {sortBy === 'value' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700 bg-gray-900/50">
+                {getStateTableData().length > 0 ? getStateTableData().map((item) => (
+                  <tr key={item.name} className="hover:bg-gray-700/50 transition-colors duration-150">
+                    <td className="px-4 py-3 text-sm font-medium text-blue-400">{item.name}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{item.displayValue}</td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={2} className="px-4 py-6 text-center text-gray-400">
+                      No state details available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      
       {/* Details */}
       <div>
         <h3 className="text-lg font-medium mb-4">Bot Details</h3>
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <div className="rounded-md border border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <tbody>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Exchange</td>
-                  <td className="py-3 px-4 font-medium">{state.exchange}</td>
+            <table className="w-full table-auto">
+              <thead className="bg-gray-800">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Property</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Value</th>
                 </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Account ID</td>
-                  <td className="py-3 px-4 font-medium">{state.accountId}</td>
+              </thead>
+              <tbody className="divide-y divide-gray-700 bg-gray-900/50">
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Exchange</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{botState.exchange}</td>
                 </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Trading Strategy</td>
-                  <td className="py-3 px-4 font-medium">{state.tradingStrategy}</td>
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Account ID</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{botState.accountId}</td>
                 </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Trading Pairs</td>
-                  <td className="py-3 px-4">
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Trading Strategy</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{botState.tradingStrategy}</td>
+                </tr>
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Trading Pairs</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">
                     <div className="flex flex-wrap gap-2">
-                      {state.tradingPairs.map((pair) => (
+                      {botState.tradingPairs.map((pair) => (
                         <Badge key={pair} variant="outline" className="bg-gray-700/50">
                           {pair}
                         </Badge>
@@ -180,21 +305,21 @@ const BotState: React.FC<BotStateProps> = ({ botId }) => {
                     </div>
                   </td>
                 </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Deviation Threshold</td>
-                  <td className="py-3 px-4 font-medium">{state.deviationThreshold}%</td>
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Deviation Threshold</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{botState.deviationThreshold}%</td>
                 </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Rebalance Threshold</td>
-                  <td className="py-3 px-4 font-medium">{state.rebalanceThreshold}%</td>
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Rebalance Threshold</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{botState.rebalanceThreshold}%</td>
                 </tr>
-                <tr className="border-b border-gray-700">
-                  <td className="py-3 px-4 text-gray-400">Last Trade</td>
-                  <td className="py-3 px-4 font-medium">{formatDateTime(state.lastTradeTime)}</td>
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Last Trade</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{formatDateTime(botState.lastTradeTime)}</td>
                 </tr>
-                <tr>
-                  <td className="py-3 px-4 text-gray-400">Last Updated</td>
-                  <td className="py-3 px-4 font-medium">{formatDateTime(state.lastUpdateTime)}</td>
+                <tr className="hover:bg-gray-700/50 transition-colors duration-150">
+                  <td className="px-4 py-3 text-sm font-medium text-blue-400">Last Updated</td>
+                  <td className="px-4 py-3 text-sm text-gray-200">{formatDateTime(botState.lastUpdateTime)}</td>
                 </tr>
               </tbody>
             </table>

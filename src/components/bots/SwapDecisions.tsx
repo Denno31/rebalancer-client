@@ -18,6 +18,8 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
   const [page, setPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
     const loadSwapDecisions = async () => {
@@ -43,6 +45,16 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
+  };
+  
+  // Handle sorting change
+  const handleSortChange = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('desc'); // Default to descending when changing columns
+    }
   };
 
   const getDeviationBadge = (deviation: number, triggered: boolean) => {
@@ -114,35 +126,80 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-gray-900 divide-y divide-gray-800">
-              <thead>
+          <div className="overflow-x-auto rounded-md border border-gray-700">
+            <table className="w-full table-auto">
+              <thead className="bg-gray-800">
                 <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">ID</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Date</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">From</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">To</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Price Deviation</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Threshold</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Unit Gain %</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Swap Status</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Reason</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Details</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('id')}>
+                    <div className="flex items-center">
+                      ID
+                      {sortBy === 'id' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('createdAt')}>
+                    <div className="flex items-center">
+                      Date
+                      {sortBy === 'createdAt' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('fromCoin')}>
+                    <div className="flex items-center">
+                      From
+                      {sortBy === 'fromCoin' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('toCoin')}>
+                    <div className="flex items-center">
+                      To
+                      {sortBy === 'toCoin' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('priceDeviationPercent')}>
+                    <div className="flex items-center">
+                      Price Deviation
+                      {sortBy === 'priceDeviationPercent' && (
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
+                        </svg>
+                      )}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Threshold</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Unit Gain %</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Swap Status</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Reason</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Details</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800">
-                {swaps.map((swap) => (
-                  <tr key={swap.id} className="border-b border-gray-800">
-                    <td className="py-3 px-4">{swap.id}</td>
-                    <td className="py-3 px-4">{formatTimestamp(swap.createdAt)}</td>
-                    <td className="py-3 px-4">{swap.fromCoin}</td>
-                    <td className="py-3 px-4">{swap.toCoin}</td>
-                    <td className="py-3 px-4">{getDeviationBadge(swap.priceDeviationPercent, swap.deviationTriggered)}</td>
-                    <td className="py-3 px-4">{(swap.priceThreshold).toFixed(2)}%</td>
-                    <td className="py-3 px-4">{(swap.unitGainPercent).toFixed(2)}%</td>
-                    <td className="py-3 px-4">{getSwapStatusBadge(swap.swapPerformed)}</td>
-                    <td className="py-3 px-4">{swap.reason}</td>
-                    <td className="py-3 px-4">
+              <tbody className="divide-y divide-gray-700 bg-gray-900/50">
+                {swaps.length > 0 ? swaps.map((swap) => (
+                  <tr key={swap.id} className="hover:bg-gray-700/50 transition-colors duration-150">
+                    <td className="px-4 py-3 text-sm text-gray-200">{swap.id}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{formatTimestamp(swap.createdAt)}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-blue-400">{swap.fromCoin}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-green-400">{swap.toCoin}</td>
+                    <td className="px-4 py-3">{getDeviationBadge(swap.priceDeviationPercent, swap.deviationTriggered)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{(swap.priceThreshold).toFixed(2)}%</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{(swap.unitGainPercent).toFixed(2)}%</td>
+                    <td className="px-4 py-3">{getSwapStatusBadge(swap.swapPerformed)}</td>
+                    <td className="px-4 py-3 text-sm text-gray-200">{swap.reason}</td>
+                    <td className="px-4 py-3">
                       <div className="text-xs">
                         {swap.tradeId ? (
                           <span className="text-blue-400">Trade ID: {swap.tradeId}</span>
@@ -155,7 +212,13 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
                       </div>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={10} className="px-4 py-6 text-center text-gray-400">
+                      No swap decisions match your filters
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

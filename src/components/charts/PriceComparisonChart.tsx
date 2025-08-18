@@ -10,7 +10,7 @@ import { Badge } from '../ui/Badge';
 import { Select } from '../ui/Select';
 import { Switch } from '../ui/Switch';
 import { fetchPriceComparison, fetchHistoricalComparison } from '@/utils/botApi';
-import { BarChartIcon, TableIcon, RefreshCw } from 'lucide-react';
+import { BarChartIcon, TableIcon, RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
 
 // Register ChartJS components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
@@ -73,6 +73,8 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
   const [selectedCoin, setSelectedCoin] = useState<string>('all');
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [sortColumn, setSortColumn] = useState<string>('coin');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   
 
   // Time range options in milliseconds - memoized to prevent recreation
@@ -355,6 +357,18 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
   const toggleViewMode = useCallback(() => {
     setViewMode(prevMode => prevMode === 'chart' ? 'table' : 'chart');
   }, []);
+  
+  // Handle sorting
+  const handleSortChange = useCallback((column: string) => {
+    setSortColumn(prev => {
+      if (prev === column) {
+        setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+        return column;
+      }
+      setSortDirection('asc');
+      return column;
+    });
+  }, []);
 
   const toggleTableView = () => {
     setViewMode('table');
@@ -561,30 +575,115 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
       {/* Table View */}
       {viewMode === 'table' && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="py-2 px-4 text-left">Coin</th>
-                <th className="py-2 px-4 text-left">Initial Price</th>
-                <th className="py-2 px-4 text-left">Current Price</th>
-                <th className="py-2 px-4 text-right">Change</th>
-                <th className="py-2 px-4 text-right">Snapshot Date</th>
+          <table className="w-full table-auto">
+            <thead className="bg-gray-800">
+              <tr>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                  onClick={() => handleSortChange('coin')}
+                >
+                  <div className="flex items-center">
+                    <span>Coin</span>
+                    {sortColumn === 'coin' && (
+                      <span className="ml-1">
+                        {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </span>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                  onClick={() => handleSortChange('initialPrice')}
+                >
+                  <div className="flex items-center">
+                    <span>Initial Price</span>
+                    {sortColumn === 'initialPrice' && (
+                      <span className="ml-1">
+                        {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </span>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                  onClick={() => handleSortChange('currentPrice')}
+                >
+                  <div className="flex items-center">
+                    <span>Current Price</span>
+                    {sortColumn === 'currentPrice' && (
+                      <span className="ml-1">
+                        {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </span>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                  onClick={() => handleSortChange('percentChange')}
+                >
+                  <div className="flex items-center justify-end">
+                    <span>Change</span>
+                    {sortColumn === 'percentChange' && (
+                      <span className="ml-1">
+                        {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </span>
+                    )}
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                  onClick={() => handleSortChange('snapshotTimestamp')}
+                >
+                  <div className="flex items-center justify-end">
+                    <span>Snapshot Date</span>
+                    {sortColumn === 'snapshotTimestamp' && (
+                      <span className="ml-1">
+                        {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </span>
+                    )}
+                  </div>
+                </th>
               </tr>
             </thead>
-            <tbody>
-              {priceComparisonData.map((coin) => (
-                <tr key={coin.coin} className="border-b hover:bg-muted/50">
-                  <td className="py-2 px-4 font-medium">{coin.coin}</td>
-                  <td className="py-2 px-4">{formatPrice(coin.initialPrice)}</td>
-                  <td className="py-2 px-4">{formatPrice(coin.currentPrice)}</td>
-                  <td className={`py-2 px-4 text-right ${getChangeClass(coin.percentChange)}`}>
-                    {formatPercentage(coin.percentChange)}
-                  </td>
-                  <td className="py-2 px-4 text-right text-muted-foreground">
-                    {new Date(coin.snapshotTimestamp).toLocaleDateString()}
+            <tbody className="bg-gray-900 divide-y divide-gray-800">
+              {priceComparisonData
+                .sort((a, b) => {
+                  const aValue = a[sortColumn as keyof typeof a];
+                  const bValue = b[sortColumn as keyof typeof b];
+                  
+                  if (aValue === null || aValue === undefined) return 1;
+                  if (bValue === null || bValue === undefined) return -1;
+                  
+                  if (typeof aValue === 'string' && typeof bValue === 'string') {
+                    return sortDirection === 'asc' 
+                      ? aValue.localeCompare(bValue) 
+                      : bValue.localeCompare(aValue);
+                  } else {
+                    return sortDirection === 'asc' 
+                      ? (aValue < bValue ? -1 : 1) 
+                      : (bValue < aValue ? -1 : 1);
+                  }
+                })
+                .map((coin) => (
+                  <tr key={coin.coin} className="hover:bg-gray-800/50 transition-colors">
+                    <td className="px-4 py-3 whitespace-nowrap font-medium">{coin.coin}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{formatPrice(coin.initialPrice)}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">{formatPrice(coin.currentPrice)}</td>
+                    <td className={`px-4 py-3 text-right whitespace-nowrap ${getChangeClass(coin.percentChange)}`}>
+                      {formatPercentage(coin.percentChange)}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap text-muted-foreground">
+                      {new Date(coin.snapshotTimestamp).toLocaleDateString()}
+                    </td>
+                  </tr>
+              ))}
+              {priceComparisonData.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                    No price data available
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
