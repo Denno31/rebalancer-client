@@ -47,7 +47,7 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
 
   const getDeviationBadge = (deviation: number, triggered: boolean) => {
     // Format deviation as percentage with 2 decimal places
-    const deviationStr = `${(deviation * 100).toFixed(2)}%`;
+    const deviationStr = `${(deviation).toFixed(2)}%`;
     
     if (triggered) {
       return <Badge variant="outline" className="bg-green-900/20 text-green-400 border-green-800">{deviationStr}</Badge>;
@@ -138,8 +138,8 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
                     <td className="py-3 px-4">{swap.fromCoin}</td>
                     <td className="py-3 px-4">{swap.toCoin}</td>
                     <td className="py-3 px-4">{getDeviationBadge(swap.priceDeviationPercent, swap.deviationTriggered)}</td>
-                    <td className="py-3 px-4">{(swap.priceThreshold * 100).toFixed(2)}%</td>
-                    <td className="py-3 px-4">{(swap.unitGainPercent * 100).toFixed(2)}%</td>
+                    <td className="py-3 px-4">{(swap.priceThreshold).toFixed(2)}%</td>
+                    <td className="py-3 px-4">{(swap.unitGainPercent).toFixed(2)}%</td>
                     <td className="py-3 px-4">{getSwapStatusBadge(swap.swapPerformed)}</td>
                     <td className="py-3 px-4">{swap.reason}</td>
                     <td className="py-3 px-4">

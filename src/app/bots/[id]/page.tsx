@@ -180,7 +180,7 @@ export default function BotDetailPage() {
     <DashboardLayout customTitle={bot?.name ? `Bot: ${bot.name}` : 'Bot Details'}>
       <div className="p-6">
         {/* Header Section */}
-        <div className="bg-gray-800 p-4 mb-6 rounded-md">
+        <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 mb-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-3">Bot Details</h1>
@@ -216,7 +216,7 @@ export default function BotDetailPage() {
               </Button>
               <Link 
                 href={`/bots/${bot.id}/edit`}
-                className="px-4 py-2 bg-yellow-500 text-black rounded-md hover:bg-yellow-400 flex items-center"
+                className="px-4 py-2 bg-[#f0b90b] text-black rounded-md hover:bg-[#f0b90b]/80 flex items-center"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -230,9 +230,9 @@ export default function BotDetailPage() {
         {/* Key Metrics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {/* Current Coin Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -248,9 +248,9 @@ export default function BotDetailPage() {
           </div>
 
           {/* USDT Value Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-start">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-start">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -285,9 +285,9 @@ export default function BotDetailPage() {
           </div>
 
           {/* Total Trades Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
             </div>
@@ -304,9 +304,9 @@ export default function BotDetailPage() {
           </div>
 
           {/* Profit Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             </div>
@@ -318,11 +318,11 @@ export default function BotDetailPage() {
         </div>
 
         {/* Additional Metrics */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           {/* Threshold Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
             </div>
@@ -333,9 +333,9 @@ export default function BotDetailPage() {
           </div>
 
           {/* Check Interval Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -346,9 +346,9 @@ export default function BotDetailPage() {
           </div>
 
           {/* Success Rate Card */}
-          <div className="bg-gray-800 rounded-md p-4 flex items-center">
-            <div className="bg-blue-900/30 p-3 rounded-full mr-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -363,12 +363,24 @@ export default function BotDetailPage() {
               </p>
             </div>
           </div>
-        </div>
-        
+
+          {/* Global Peak Value Card */}
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4 flex items-center">
+            <div className="bg-[#f0b90b]/10 p-3 rounded-full mr-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f0b90b]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm text-gray-400">Global Peak Value</p>
+              <p className="text-xl font-bold">{formatCurrency((bot as any).globalPeakValue) || 'N/A'}</p>
+            </div>
+          </div>
+        </div> 
         {/* Tab Navigation and Quick Actions */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           {/* Navigation Tabs */}
-          <div className="bg-gray-800 rounded-md flex-1 overflow-hidden">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md flex-1 overflow-hidden">
             <div className="flex border-b border-gray-700 overflow-x-auto">
               {[
                 { id: 'overview', label: 'Overview', icon: 'bi bi-grid' },
@@ -384,7 +396,7 @@ export default function BotDetailPage() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`px-4 py-3 font-medium text-sm inline-flex items-center whitespace-nowrap ${activeTab === tab.id 
-                    ? 'border-b-2 border-yellow-500 text-yellow-500' 
+                    ? 'border-b-2 border-[#f0b90b] text-[#f0b90b]' 
                     : 'text-gray-400 hover:text-gray-300 hover:border-b-2 hover:border-gray-600'}`}
                 >
                   <i className={`${tab.icon} mr-2`}></i>
@@ -395,11 +407,11 @@ export default function BotDetailPage() {
           </div>
           
           {/* Quick Actions */}
-          <div className="bg-gray-800 rounded-md p-4">
+          <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4">
             <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
             <div className="grid grid-cols-1 gap-3">
               <button
-                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-md flex items-center justify-center"
+                className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
                 onClick={() => {
                   const stablecoin = window.confirm('Choose a stablecoin:\n- OK for USDT\n- Cancel for USDC') ? 'USDT' : 'USDC';
                   const amount = prompt(`Enter amount to sell (or 'max' for all):`, 'max');
@@ -422,7 +434,7 @@ export default function BotDetailPage() {
               </button>
               
               <button
-                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-400 text-black rounded-md flex items-center justify-center"
+                className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
                 onClick={() => setShowResetModal(true)}
                 disabled={actionLoading}
               >
@@ -447,7 +459,7 @@ export default function BotDetailPage() {
         </div>
         
         {/* Main Content based on selected tab */}
-        <div className="bg-gray-800 rounded-md p-6">
+        <div className="bg-[#121616] rounded-md p-6">
           {activeTab === 'overview' && (
             <div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -735,7 +747,7 @@ export default function BotDetailPage() {
               <h2 className="text-xl font-bold mb-4">Performance</h2>
               
               {/* Charts - To be implemented */}
-              <div className="bg-gray-800 rounded-md p-6 text-center">
+              <div className="bg-[#121616] rounded-md p-6 text-center">
                 <p className="text-gray-400">Performance charts will be displayed here</p>
                 <p className="text-sm text-gray-500 mt-2">This feature is coming soon</p>
               </div>
