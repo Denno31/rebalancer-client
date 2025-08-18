@@ -94,8 +94,8 @@ const BotAssets: React.FC<BotAssetsProps> = ({ botId }) => {
   
   // Sort assets based on current sort settings
   const sortedAssets = [...assets].sort((a, b) => {
-    let valA: any = a[sortBy as keyof BotAsset];
-    let valB: any = b[sortBy as keyof BotAsset];
+    const valA: any = a[sortBy as keyof BotAsset];
+    const valB: any = b[sortBy as keyof BotAsset];
     
     // Handle numeric sorting
     if (typeof valA === 'number' && typeof valB === 'number') {
