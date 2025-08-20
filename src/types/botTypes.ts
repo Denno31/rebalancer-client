@@ -26,6 +26,7 @@ export interface Bot {
     totalCommissionsPaid?: number;
     priceSource?: string;
     preferredStablecoin?: string;
+    useTakeProfit?: boolean;
     createdAt?: string;
     updatedAt?: string;
 }

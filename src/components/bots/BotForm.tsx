@@ -32,6 +32,7 @@ interface FormData {
   checkInterval: string;
   accountId: string;
   enabled: boolean;
+  useTakeProfit: boolean;
 }
 
 export default function BotForm() {
@@ -48,6 +49,7 @@ export default function BotForm() {
     checkInterval: '10',
     accountId: '',
     enabled: true,
+    useTakeProfit: false,
   });
 
   // UI state
@@ -185,7 +187,8 @@ export default function BotForm() {
         initialCoin: formData.initialCoin,
         currentCoin: formData.initialCoin, // Set current coin same as initial
         accountId: formData.accountId,
-        takeProfitPercentage: formData.takeProfitPercentage ? parseFloat(formData.takeProfitPercentage) : undefined,
+        useTakeProfit: formData.useTakeProfit,
+        takeProfitPercentage: formData.useTakeProfit && formData.takeProfitPercentage ? parseFloat(formData.takeProfitPercentage) : undefined,
         // Add budget field for backend compatibility
         manualBudgetAmount: parseFloat(formData.budget)
       };
@@ -219,6 +222,7 @@ export default function BotForm() {
         checkInterval: '10',
         accountId: '',
         enabled: true,
+        useTakeProfit: false,
       });
       setSelectedCoins([]);
       
@@ -391,10 +395,24 @@ export default function BotForm() {
               </p>
             </div>
             
+            {/* Take Profit Toggle */}
+            <div className="flex items-center space-x-3 mb-4">
+              <Switch 
+                id="useTakeProfit" 
+                checked={formData.useTakeProfit}
+                onCheckedChange={(checked) => {
+                  setFormData(prev => ({ ...prev, useTakeProfit: checked }));
+                }}
+              />
+              <label htmlFor="useTakeProfit" className="text-sm font-medium text-gray-300">
+                Enable Take Profit
+              </label>
+            </div>
+            
             {/* Take Profit Percentage */}
             <div>
               <label htmlFor="takeProfitPercentage" className="block text-sm font-medium text-gray-300">
-                Take Profit Percentage (Optional)
+                Take Profit Percentage {!formData.useTakeProfit && "(Disabled)"}
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <input
@@ -403,10 +421,11 @@ export default function BotForm() {
                   name="takeProfitPercentage"
                   value={formData.takeProfitPercentage}
                   onChange={handleChange}
-                  className="block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className={`block w-full rounded-md border-gray-600 ${formData.useTakeProfit ? 'bg-gray-700' : 'bg-gray-800'} text-white shadow-sm focus:border-blue-500 focus:ring-blue-500`}
                   placeholder="0"
                   step="0.1"
                   min="0"
+                  disabled={!formData.useTakeProfit}
                 />
               </div>
               <p className="text-sm text-gray-400 mt-1">

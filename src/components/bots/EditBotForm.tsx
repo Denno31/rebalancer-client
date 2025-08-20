@@ -32,6 +32,7 @@ interface FormData {
   initialCoin: string;
   priceSource: string;
   preferredStablecoin: string;
+  useTakeProfit: boolean;
 }
 
 interface EditBotFormProps {
@@ -51,7 +52,8 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
     enabled: true,
     initialCoin: '',
     priceSource: 'binance',
-    preferredStablecoin: 'USDT'
+    preferredStablecoin: 'USDT',
+    useTakeProfit: false
   });
 
   // UI state
@@ -95,7 +97,8 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
           enabled: bot.enabled !== false,
           initialCoin: bot.initialCoin || '',
           priceSource: bot.priceSource || 'binance',
-          preferredStablecoin: bot.preferredStablecoin || 'USDT'
+          preferredStablecoin: bot.preferredStablecoin || 'USDT',
+          useTakeProfit: bot.useTakeProfit === true
         });
 
         // Set selected coins
@@ -197,7 +200,8 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
         thresholdPercentage: parseFloat(formData.thresholdPercentage) || 5,
         checkInterval: parseInt(formData.checkInterval) || 10,
         manualBudgetAmount: formData.budget ? parseFloat(formData.budget) : undefined,
-        takeProfitPercentage: formData.takeProfitPercentage ? 
+        useTakeProfit: formData.useTakeProfit,
+        takeProfitPercentage: formData.useTakeProfit && formData.takeProfitPercentage ? 
           parseFloat(formData.takeProfitPercentage) : 
           undefined
       };
@@ -342,9 +346,24 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
               </p>
             </div>
             
+            {/* Take Profit Toggle */}
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                id="useTakeProfit"
+                name="useTakeProfit"
+                checked={formData.useTakeProfit}
+                onChange={handleCheckboxChange}
+                className="mr-2"
+              />
+              <label htmlFor="useTakeProfit" className="text-sm font-medium text-gray-300">
+                Enable Take Profit
+              </label>
+            </div>
+            
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="takeProfitPercentage">
-                Take Profit Percentage (optional)
+                Take Profit Percentage {!formData.useTakeProfit && "(Disabled)"}
               </label>
               <input
                 type="number"
@@ -354,7 +373,8 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
                 onChange={handleChange}
                 step="0.1"
                 min="0"
-                className="w-full p-2 rounded-md border border-gray-600 bg-gray-700 text-white"
+                disabled={!formData.useTakeProfit}
+                className={`w-full p-2 rounded-md border border-gray-600 ${formData.useTakeProfit ? 'bg-gray-700' : 'bg-gray-800'} text-white`}
               />
               <p className="text-xs text-gray-400 mt-1">
                 Percentage gain at which to take profit
