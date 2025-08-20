@@ -390,8 +390,8 @@ export default function BotDetailPage() {
                 { id: 'price-history', label: 'Price History', icon: 'bi bi-currency-exchange' },
                 { id: 'logs', label: 'Logs', icon: 'bi bi-journal-text' },
                 { id: 'assets', label: 'Assets', icon: 'bi bi-currency-exchange' },
-                { id: 'state', label: 'Bot State', icon: 'bi bi-cpu' },
-                { id: 'performance', label: 'Performance', icon: 'bi bi-bar-chart' },
+                // { id: 'state', label: 'Bot State', icon: 'bi bi-cpu' },
+                // { id: 'performance', label: 'Performance', icon: 'bi bi-bar-chart' },
                 { id: 'deviation-calculator', label: 'Deviation Calculator', icon: 'bi bi-graph-up' },
 
               ].map(tab => (
@@ -762,13 +762,13 @@ export default function BotDetailPage() {
           </div>
         )}
         
-        {activeTab === 'state' && (
+        {/* {activeTab === 'state' && (
           <div className="space-y-6">
             <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <BotState botId={botId} />
             </div>
           </div>
-        )}
+        )} */}
         
         {activeTab === 'price-history' && (
           <div className="space-y-6">
@@ -778,7 +778,7 @@ export default function BotDetailPage() {
           </div>
         )}
         
-        {activeTab === 'performance' && (
+        {activeTab === 'performancex' && (
           <div className="space-y-6">
             <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold mb-4">Performance</h2>

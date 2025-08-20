@@ -561,7 +561,8 @@ export async function fetchBotDeviations(
     timeRange?: string;
     page?: number;
     limit?: number;
-  } = {}
+  } = {},
+  signal?: AbortSignal
 ): Promise<BotDeviationsResponse> {
   try {
     const params = new URLSearchParams();
@@ -583,7 +584,8 @@ export async function fetchBotDeviations(
       headers: {
         'Content-Type': 'application/json',
         ...getAuthHeader()
-      }
+      },
+      signal: signal // Add the AbortSignal parameter to the fetch call
     });
     
     if (!response.ok) {
@@ -597,6 +599,12 @@ export async function fetchBotDeviations(
     
     return response.json();
   } catch (error: unknown) {
+    // Check if this is an abort error and re-throw it so it can be handled appropriately
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Fetch aborted due to timeout or manual cancellation');
+      throw error;
+    }
+    
     console.error(`Error fetching deviation data for bot ${botId}:`, error);
     throw error; // Throw error like legacy code instead of returning empty array
   }
