@@ -356,7 +356,7 @@ export default function BotDetailPage() {
               <p className="text-sm text-gray-400">Success Rate</p>
               <p className="text-xl font-bold">
                 {bot.tradeStats?.successRate !== undefined 
-                  ? `${bot.tradeStats.successRate}%` 
+                  ? `${bot.tradeStats.successRate.toFixed(2) }%` 
                   : bot.successRate !== undefined 
                     ? `${bot.successRate}%` 
                     : 'N/A'}

@@ -278,7 +278,7 @@ const BotCard: React.FC<BotCardProps> = ({ bot: initialBot }) => {
               <div>
                 <div className="text-xs text-gray-400">Total Trades</div>
                 <div className="font-medium text-white">
-                  {bot.trades?.length || 0}
+                  {bot.tradeStats?.totalTrades}
                 </div>
               </div>
               <div>
@@ -287,11 +287,11 @@ const BotCard: React.FC<BotCardProps> = ({ bot: initialBot }) => {
                   <div className="w-16 h-2 bg-gray-700 rounded-full mr-2 overflow-hidden">
                     <div 
                       className="h-full bg-green-500" 
-                      style={{ width: `${calculateSuccessRate()}%` }}
+                      style={{ width: `${bot.tradeStats?.successRate}%` }}
                     ></div>
                   </div>
                   <span className="text-sm font-medium text-white">
-                    {formatPercentage(calculateSuccessRate())}
+                    {formatPercentage(bot.tradeStats?.successRate || 0)}
                   </span>
                 </div>
               </div>

@@ -29,6 +29,11 @@ export interface Bot {
     useTakeProfit?: boolean;
     createdAt?: string;
     updatedAt?: string;
+    tradeStats?:{
+        totalTrades:number,
+        successfulTrades:number,
+        successRate:number
+    }
 }
 
 export interface BotStats {
