@@ -22,6 +22,10 @@ interface BotExtended extends Bot {
   botAssets?: BotAsset[];
   trades?: Trade[];
   realTimePrice?: number;
+  profit?: number;
+  profitPercentage?: number;
+  realTimeUsdtEquivalent?: number;
+  
 }
 
 const BotCard: React.FC<BotCardProps> = ({ bot: initialBot }) => {
@@ -156,7 +160,7 @@ const BotCard: React.FC<BotCardProps> = ({ bot: initialBot }) => {
           {coinsList.map((coin, index) => (
             <span 
               key={`${coin}-${index}`}
-              className="px-2 py-1 text-xs rounded-md bg-gray-700 text-white"
+              className={`px-2 py-1 text-xs rounded-md bg-gray-700 text-white ${coin === bot.currentCoin ? 'bg-green-700' : ''}`}
             >
               {coin}
             </span>
@@ -232,7 +236,7 @@ const BotCard: React.FC<BotCardProps> = ({ bot: initialBot }) => {
               {loading ? (
                 <span className="text-gray-500">Loading...</span>
               ) : (
-                formatCurrency(calculateCurrentValue())
+                bot.realTimeUsdtEquivalent
               )}
             </div>
           </div>
@@ -245,13 +249,13 @@ const BotCard: React.FC<BotCardProps> = ({ bot: initialBot }) => {
             {loading ? (
               <div className="font-medium text-gray-500">Loading...</div>
             ) : (
-              <div className={`font-medium ${getProfitLossClass(calculateProfit())}`}>
-                {formatCurrency(calculateProfit())}
+              <div className={`font-medium ${getProfitLossClass(bot.profit)}`}>
+                {bot?.profit && Number(bot.profit).toFixed(2)}
                 <span className="ml-1 text-xs px-2 py-0.5 rounded-full bg-opacity-20 inline-block"
                   style={{
-                    backgroundColor: calculateProfitPercentage() >= 0 ? 'rgba(28, 200, 138, 0.2)' : 'rgba(231, 74, 59, 0.2)'
+                    backgroundColor: bot?.profit && bot?.profit >= 0 ? 'rgba(28, 200, 138, 0.2)' : 'rgba(231, 74, 59, 0.2)'
                   }}>
-                  {calculateProfitPercentage() >= 0 ? '+' : ''}{formatPercentage(calculateProfitPercentage())}
+                  {bot?.profit && bot.profit >= 0 ? '+' : ''}{formatPercentage(bot?.profitPercentage || 0)}
                 </span>
               </div>
             )}
