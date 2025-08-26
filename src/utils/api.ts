@@ -1,5 +1,6 @@
 import { API_URL } from './config';
 import { Bot as BotType } from '@/types/botTypes';
+import { Trade } from '@/types/tradeTypes';
 import { User, UserLogin, UserRegistration, ResetPasswordRequest, ResetPasswordConfirm } from '@/types/userTypes';
 
 // Re-export the Bot type for backward compatibility
@@ -229,8 +230,22 @@ export async function updateBot(botId: number, botData: Partial<Bot>) {
   return handleResponse(response);
 }
 
+// Pagination response interface
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+// Trade response with pagination
+export interface TradeResponse {
+  trades: Trade[];
+  pagination: PaginationInfo;
+}
+
 // Fetch trades for a specific bot
-export async function fetchBotTrades(botId: number, page?: number, limit?: number, status?: string) {
+export async function fetchBotTrades(botId: number, page?: number, limit?: number, status?: string): Promise<TradeResponse> {
   let url = `${API_URL}/api/bots/${botId}/trades`;
   
   // Add query parameters if provided

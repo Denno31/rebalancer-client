@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trade } from '@/types/tradeTypes';
-import { fetchBotTrades } from '@/utils/api';
+import { fetchBotTrades, TradeResponse, PaginationInfo } from '@/utils/api';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TradeHistoryProps {
   botId: number;
-  fetchTrades?: (page?: number, limit?: number) => Promise<Trade[]>;
+  fetchTrades?: (page?: number, limit?: number) => Promise<TradeResponse>;
 }
 
 const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
@@ -27,16 +27,14 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
       try {
         setLoading(true);
         if (fetchTrades) {
-          const data = await fetchTrades(currentPage, rowsPerPage);
-          setTrades(data);
-          // Estimate total count if not provided - this is a fallback
-          setTotalCount(prev => data.length === rowsPerPage ? Math.max(prev, currentPage * rowsPerPage + 1) : currentPage * rowsPerPage - rowsPerPage + data.length);
+          const response = await fetchTrades(currentPage, rowsPerPage);
+          setTrades(response.trades);
+          setTotalCount(response.pagination.total);
         } else {
           // Use the built-in fetch function
-          const data = await fetchBotTrades(botId, currentPage, rowsPerPage, filterStatus || undefined);
-          setTrades(data);
-          // Estimate total count if not provided - this is a fallback
-          setTotalCount(prev => data.length === rowsPerPage ? Math.max(prev, currentPage * rowsPerPage + 1) : currentPage * rowsPerPage - rowsPerPage + data.length);
+          const response = await fetchBotTrades(botId, currentPage, rowsPerPage, filterStatus || undefined);
+          setTrades(response.trades);
+          setTotalCount(response.pagination.total);
         }
         setError(null);
       } catch (err) {
