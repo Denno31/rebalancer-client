@@ -661,9 +661,24 @@ export interface PriceComparisonData {
   timestamp: string;
 }
 
-export async function fetchPriceComparison(botId: number): Promise<PriceComparisonData> {
+export async function fetchPriceComparison(
+  botId: number, 
+  options: { page?: number; limit?: number } = {}
+): Promise<PriceComparisonData> {
   try {
-    const response = await fetch(`${API_URL}/api/snapshots/bots/${botId}/price-comparison`, {
+    const params = new URLSearchParams();
+    
+    if (options.page !== undefined) {
+      params.append('page', options.page.toString());
+    }
+    
+    if (options.limit !== undefined) {
+      params.append('limit', options.limit.toString());
+    }
+    
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    
+    const response = await fetch(`${API_URL}/api/snapshots/bots/${botId}/price-comparison${queryString}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

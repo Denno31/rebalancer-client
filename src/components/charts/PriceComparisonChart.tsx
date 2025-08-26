@@ -1,20 +1,17 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import React, { useState, useEffect, useMemo, useCallback, FC } from 'react';
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Alert, AlertDescription } from "@/components/ui/Alert";
 import { Line } from 'react-chartjs-2';
-import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Alert, AlertDescription } from '../ui/Alert';
-import { Badge } from '../ui/Badge';
-import { Select } from '../ui/Select';
-import { Switch } from '../ui/Switch';
+import { Switch } from "@/components/ui/Switch";
+import { BarChart as BarChartIcon, Table as TableIcon, ChevronUp, ChevronDown, RefreshCw } from 'lucide-react';
 import { fetchPriceComparison, fetchHistoricalComparison } from '@/utils/botApi';
-import { BarChartIcon, TableIcon, RefreshCw, ChevronUp, ChevronDown } from 'lucide-react';
 
-// Register ChartJS components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
+// Define types for props and state
 interface PriceComparisonData {
   coin: string;
   initialPrice: number;
@@ -31,6 +28,9 @@ interface PriceComparisonResponse {
   botName: string;
   priceComparisons: PriceComparisonData[];
   preferredStablecoin: string;
+  totalCount?: number;
+  page?: number;
+  limit?: number;
 }
 
 interface HistoricalPrice {
@@ -60,13 +60,14 @@ interface HistoricalComparisonResponse {
 }
 
 interface PriceComparisonChartProps {
-  botId: number;
+  botId: string | number;
 }
 
 const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [priceComparisonData, setPriceComparisonData] = useState<PriceComparisonData[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [historicalData, setHistoricalData] = useState<CoinHistoricalData[]>([]);
   const [viewMode, setViewMode] = useState<'chart' | 'cards' | 'table'>('table'); // Default to cards view
   const [timeRange, setTimeRange] = useState<'1h' | '6h' | '12h' | '24h' | '3d' | '7d' | '30d'>('24h');
@@ -75,6 +76,9 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
   const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
   const [sortColumn, setSortColumn] = useState<string>('coin');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
   
 
   // Time range options in milliseconds - memoized to prevent recreation
@@ -96,13 +100,18 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
     if (!botId) return;
     
     try {
-      const data = await fetchPriceComparison(botId) as unknown as PriceComparisonResponse;
+      // Convert botId to number if it's a string to ensure API compatibility
+      const data = await fetchPriceComparison(Number(botId), { page: currentPage, limit: rowsPerPage });
+      const responseData = data as unknown as PriceComparisonResponse;
       // Ensure data has the expected structure
-      if (data && Array.isArray(data.priceComparisons)) {
-        setPriceComparisonData(data.priceComparisons);
+      if (responseData && Array.isArray(responseData.priceComparisons)) {
+        setPriceComparisonData(responseData.priceComparisons);
+        // Store pagination information
+        setTotalCount(responseData.totalCount || responseData.priceComparisons.length);
       } else {
         setPriceComparisonData([]);
-        console.error('Invalid price comparison data format:', data);
+        setTotalCount(0);
+        console.error('Invalid price comparison data format:', responseData);
       }
       setLastRefreshed(new Date());
       setError(null);
@@ -115,7 +124,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
         setError('Failed to load price comparison data');
       }
     }
-  }, [botId]);
+  }, [botId, currentPage, rowsPerPage]);
 
   // Get options for historical comparison - memoized to prevent recreation
   const historicalOptions = useMemo(() => {
@@ -140,7 +149,8 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
     if (!botId) return;
     
     try {
-      const response = await fetchHistoricalComparison(botId, historicalOptions) as unknown as HistoricalComparisonResponse;
+      // Convert botId to number if it's a string to ensure API compatibility
+      const response = await fetchHistoricalComparison(Number(botId), historicalOptions) as unknown as HistoricalComparisonResponse;
       // Ensure response has the expected structure
       if (response && Array.isArray(response.data)) {
         setHistoricalData(response.data);
@@ -183,25 +193,23 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
         }
       }
     };
-
-    // Load initial data
-    loadData();
-
-    // Set up auto-refresh
-    let refreshTimer: NodeJS.Timeout | null = null;
+    
+    // Load data when component mounts or pagination/refresh parameters change
+    loadData(false);
+    
+    // Set up auto-refresh interval if enabled
     if (autoRefresh) {
-      refreshTimer = setInterval(() => loadData(true), 60000); // Silent refresh every minute
+      const interval = setInterval(() => {
+        setIsSilentRefresh(true);
+        loadPriceComparison().finally(() => setIsSilentRefresh(false));
+      }, 60000); // Refresh every minute
+      
+      return () => clearInterval(interval);
     }
-
+    
     // Cleanup function
-    return () => {
-      isMounted = false;
-      if (refreshTimer) clearInterval(refreshTimer);
-
-      // Destroy chart instance when component unmounts to prevent canvas reuse errors
-
-    };
-  }, [botId, autoRefresh, loadPriceComparison, loadHistoricalComparison]);
+    return () => { isMounted = false; };
+  }, [botId, autoRefresh, loadPriceComparison, loadHistoricalComparison, currentPage, rowsPerPage]);
 
   // Utility functions
   function formatPercentage(value: number): string {
@@ -471,9 +479,10 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
         </div>
 
         <div className="flex-1 w-full sm:w-auto">
-          <Select
+          <select
+            className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md"
             value={selectedCoin}
-            onChange={(e) => handleCoinChange(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleCoinChange(e.target.value)}
           >
             <option value="all">All Coins</option>
             {priceComparisonData.map((coin) => (
@@ -481,7 +490,7 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
                 {coin.coin}
               </option>
             ))}
-          </Select>
+          </select>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -686,6 +695,62 @@ const PriceComparisonChart: React.FC<PriceComparisonChartProps> = ({ botId }) =>
               )}
             </tbody>
           </table>
+          
+          {/* Pagination Controls */}
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-400">
+              Showing {priceComparisonData.length > 0 ? (currentPage - 1) * rowsPerPage + 1 : 0} to {Math.min(
+                currentPage * rowsPerPage, 
+                totalCount || priceComparisonData.length
+              )} of {totalCount || priceComparisonData.length} entries
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <select 
+                className="bg-gray-800 border border-gray-700 text-white text-sm rounded-md px-2 py-1"
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1); // Reset to first page when changing rows per page
+                }}
+              >
+                <option value="5">5 rows</option>
+                <option value="10">10 rows</option>
+                <option value="25">25 rows</option>
+                <option value="50">50 rows</option>
+              </select>
+              
+              <div className="flex items-center space-x-1">
+                <button
+                  className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-800 text-gray-500 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </button>
+                
+                <div className="flex items-center px-2 py-1 bg-gray-800 rounded-md">
+                  <span className="text-white">{currentPage}</span>
+                  <span className="text-gray-400 mx-1">of</span>
+                  <span className="text-white">
+                    {Math.ceil((totalCount || priceComparisonData.length) / rowsPerPage) || 1}
+                  </span>
+                </div>
+                
+                <button
+                  className={`px-3 py-1 rounded-md ${
+                    currentPage >= Math.ceil((totalCount || priceComparisonData.length) / rowsPerPage) ? 
+                    'bg-gray-800 text-gray-500 cursor-not-allowed' : 
+                    'bg-blue-600 text-white hover:bg-blue-700'
+                  }`}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil((totalCount || priceComparisonData.length) / rowsPerPage)))}
+                  disabled={currentPage >= Math.ceil((totalCount || priceComparisonData.length) / rowsPerPage)}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </Card>
