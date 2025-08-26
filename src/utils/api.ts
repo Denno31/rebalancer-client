@@ -1,5 +1,6 @@
 import { API_URL } from './config';
 import { Bot as BotType } from '@/types/botTypes';
+import { Trade } from '@/types/tradeTypes';
 import { User, UserLogin, UserRegistration, ResetPasswordRequest, ResetPasswordConfirm } from '@/types/userTypes';
 
 // Re-export the Bot type for backward compatibility
@@ -229,9 +230,37 @@ export async function updateBot(botId: number, botData: Partial<Bot>) {
   return handleResponse(response);
 }
 
+// Pagination response interface
+export interface PaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+// Trade response with pagination
+export interface TradeResponse {
+  trades: Trade[];
+  pagination: PaginationInfo;
+}
+
 // Fetch trades for a specific bot
-export async function fetchBotTrades(botId: number) {
-  const response = await fetch(`${API_URL}/api/bots/${botId}/trades`, {
+export async function fetchBotTrades(botId: number, page?: number, limit?: number, status?: string): Promise<TradeResponse> {
+  let url = `${API_URL}/api/bots/${botId}/trades`;
+  
+  // Add query parameters if provided
+  const params = new URLSearchParams();
+  if (page !== undefined) params.append('page', page.toString());
+  if (limit !== undefined) params.append('limit', limit.toString());
+  if (status) params.append('status', status);
+  
+  // Append query string if we have parameters
+  const queryString = params.toString();
+  if (queryString) {
+    url += `?${queryString}`;
+  }
+  
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',

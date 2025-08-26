@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Trade } from '@/types/tradeTypes';
-import { fetchBotTrades } from '@/utils/api';
+import { fetchBotTrades, TradeResponse, PaginationInfo } from '@/utils/api';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TradeHistoryProps {
   botId: number;
-  fetchTrades?: () => Promise<Trade[]>;
+  fetchTrades?: (page?: number, limit?: number) => Promise<TradeResponse>;
 }
 
 const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
@@ -15,18 +16,25 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('executedAt');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [totalCount, setTotalCount] = useState<number>(0);
 
   useEffect(() => {
     const loadTrades = async () => {
       try {
         setLoading(true);
         if (fetchTrades) {
-          const data = await fetchTrades();
-          setTrades(data);
+          const response = await fetchTrades(currentPage, rowsPerPage);
+          setTrades(response.trades);
+          setTotalCount(response.pagination.total);
         } else {
           // Use the built-in fetch function
-          const data = await fetchBotTrades(botId);
-          setTrades(data);
+          const response = await fetchBotTrades(botId, currentPage, rowsPerPage, filterStatus || undefined);
+          setTrades(response.trades);
+          setTotalCount(response.pagination.total);
         }
         setError(null);
       } catch (err) {
@@ -38,7 +46,7 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
     };
 
     loadTrades();
-  }, [botId, fetchTrades]);
+  }, [botId, fetchTrades, currentPage, rowsPerPage, filterStatus]);  // Add pagination dependencies
 
   // Helper functions
   const formatDate = (dateString: string) => {
@@ -80,15 +88,11 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
     }
   };
 
-  // Filter and sort trades
+  // Filter trades - only apply client-side filtering for search queries
+  // Note: status filtering is handled server-side through the API
   const filteredTrades = useMemo(() => {
     return trades
       .filter((trade) => {
-        // Status filter
-        if (filterStatus && trade.status.toLowerCase() !== filterStatus.toLowerCase()) {
-          return false;
-        }
-
         // Search query filter (search in multiple fields)
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
@@ -98,7 +102,6 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
             (trade.status && trade.status.toLowerCase().includes(query))
           );
         }
-
         return true;
       })
       .sort((a, b) => {
@@ -316,22 +319,47 @@ const TradeHistory: React.FC<TradeHistoryProps> = ({ botId, fetchTrades }) => {
         </table>
       </div>
 
-      {/* Pagination (placeholder for future enhancement) */}
-      {filteredTrades.length > 20 && (
-        <div className="flex justify-between items-center mt-4 text-sm text-gray-400">
-          <div>
-            Showing 1-20 of {filteredTrades.length} trades
-          </div>
-          <div className="flex space-x-1">
-            <button className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-md hover:bg-gray-700" disabled>
-              Previous
-            </button>
-            <button className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-md hover:bg-gray-700" disabled>
-              Next
-            </button>
-          </div>
+      {/* Pagination controls */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mt-4 text-sm text-gray-400 gap-4">
+        <div className="flex items-center space-x-2">
+          <span>Rows per page:</span>
+          <select 
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setCurrentPage(1); // Reset to first page when changing rows per page
+            }}
+            className="bg-gray-800 border border-gray-700 rounded-md text-white px-2 py-1 text-sm"
+          >
+            {[5, 10, 25, 50].map(pageSize => (
+              <option key={pageSize} value={pageSize}>
+                {pageSize}
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+        
+        <div>
+          Showing {Math.min((currentPage - 1) * rowsPerPage + 1, totalCount)} - {Math.min(currentPage * rowsPerPage, totalCount)} of {totalCount} trades
+        </div>
+        
+        <div className="flex space-x-1">
+          <button 
+            className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1 || loading}
+          >
+            <ChevronLeft size={16} className="mr-1" /> Previous
+          </button>
+          <button 
+            className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            disabled={currentPage * rowsPerPage >= totalCount || loading}
+          >
+            Next <ChevronRight size={16} className="ml-1" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
