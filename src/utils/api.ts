@@ -230,8 +230,22 @@ export async function updateBot(botId: number, botData: Partial<Bot>) {
 }
 
 // Fetch trades for a specific bot
-export async function fetchBotTrades(botId: number) {
-  const response = await fetch(`${API_URL}/api/bots/${botId}/trades`, {
+export async function fetchBotTrades(botId: number, page?: number, limit?: number, status?: string) {
+  let url = `${API_URL}/api/bots/${botId}/trades`;
+  
+  // Add query parameters if provided
+  const params = new URLSearchParams();
+  if (page !== undefined) params.append('page', page.toString());
+  if (limit !== undefined) params.append('limit', limit.toString());
+  if (status) params.append('status', status);
+  
+  // Append query string if we have parameters
+  const queryString = params.toString();
+  if (queryString) {
+    url += `?${queryString}`;
+  }
+  
+  const response = await fetch(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
