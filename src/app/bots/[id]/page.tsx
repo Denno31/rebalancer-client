@@ -18,6 +18,7 @@ import ResetBotModal from '@/components/modals/ResetBotModal';
 import DeviationCalculator from '@/components/bots/DeviationCalculator';
 import BotState from '@/components/bots/BotState';
 import PriceHistory from '@/components/bots/PriceHistory';
+import BotResetHistory from '@/components/bots/BotResetHistory';
 import { Button } from '@/components/ui/Button';
 
 // Dynamically import chart components for better performance
@@ -311,8 +312,8 @@ export default function BotDetailPage() {
               </svg>
             </div>
             <div>
-              <p className="text-sm text-gray-400">Profit</p>
-              <p className="text-xl font-bold">N/A</p>
+              <p className="text-sm text-gray-400">Take Profit</p>
+              <p className="text-xl font-bold">{bot?.takeProfitPercentage || 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -388,6 +389,7 @@ export default function BotDetailPage() {
                 { id: 'trades', label: 'Trade History', icon: 'bi bi-clock-history' },
                 { id: 'swap-decisions', label: 'Swap Decisions', icon: 'bi bi-arrow-left-right' },
                 { id: 'price-history', label: 'Price History', icon: 'bi bi-currency-exchange' },
+                { id: 'reset-history', label: 'Reset History', icon: 'bi bi-arrow-repeat' },
                 { id: 'logs', label: 'Logs', icon: 'bi bi-journal-text' },
                 { id: 'assets', label: 'Assets', icon: 'bi bi-currency-exchange' },
                 // { id: 'state', label: 'Bot State', icon: 'bi bi-cpu' },
@@ -774,6 +776,14 @@ export default function BotDetailPage() {
           <div className="space-y-6">
             <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
               <PriceHistory botId={botId} />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'reset-history' && (
+          <div className="space-y-6">
+            <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6">
+              <BotResetHistory botId={botId} />
             </div>
           </div>
         )}
