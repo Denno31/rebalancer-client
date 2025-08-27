@@ -1,32 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ChevronUp, ChevronDown } from 'lucide-react';
-import { Line } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ChartOptions,
-} from 'chart.js';
 import { fetchPriceHistory, fetchBotCoins, PricePoint } from '@/utils/botApi';
 import { Badge } from '@/components/ui/Badge';
 import { Spinner } from '../ui/Spinner';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Chart.js registration removed - not needed for table-only view
 
 // Using PricePoint interface from botApi.ts
 
@@ -43,8 +23,7 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
   const [sortColumn, setSortColumn] = useState<string>('timestamp');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [timeRange, setTimeRange] = useState<string>('24h'); // '24h', '7d', '30d', '90d'
-  const [viewMode, setViewMode] = useState<'chart' | 'table'>('table'); // Default to table view as in legacy
-  const chartRef = useRef(null);
+  // Table view only - no chart references needed
 
   // Fetch available coins for this bot
   useEffect(() => {
@@ -75,8 +54,8 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
 
     // Group by coin
     const result: Record<string, {
-      prices: number[],
-      timestamps: string[],
+      prices: number[];
+      timestamps: string[];
       sources: string[]
     }> = {};
 
@@ -171,9 +150,7 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
     setTimeRange(range);
   };
 
-  const toggleViewMode = () => {
-    setViewMode(prev => prev === 'chart' ? 'table' : 'chart');
-  };
+  // Toggle view mode removed - table view only
 
   const handleSortChange = useCallback((column: string) => {
     setSortColumn(prev => {
@@ -224,86 +201,7 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
     return priceData.filter(data => data.coin === selectedCoin);
   }, [priceData, selectedCoin]);
 
-  // Chart configuration
-  const chartOptions: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: false,
-      },
-      tooltip: {
-        mode: 'index',
-        intersect: false,
-        callbacks: {
-          label: function(context) {
-            return `${context.dataset.label}: ${formatCurrency(context.parsed.y)}`;
-          }
-        }
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          maxRotation: 0,
-          autoSkip: true,
-          maxTicksLimit: 10,
-        },
-        grid: {
-          display: true,
-          color: 'rgba(255, 255, 255, 0.1)',
-        },
-      },
-      y: {
-        position: 'right',
-        grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
-        },
-        ticks: {
-          callback: function(value) {
-            return formatCurrency(value as number);
-          }
-        }
-      }
-    },
-    interaction: {
-      intersect: false,
-      mode: 'index',
-    },
-  };
-
-  // Prepare chart data with all coins or selected coin
-  const prepareChartData = useMemo(() => {
-    if (!Object.keys(processedData).length) return { labels: [], datasets: [] };
-    
-    // Use timestamps from the first coin as the base for labels
-    // This is just a fallback if no coins are available
-    let labels: string[] = [];
-    const firstCoin = Object.keys(processedData)[0];
-    if (processedData[firstCoin]?.timestamps) {
-      labels = processedData[firstCoin].timestamps;
-    }
-    
-    // Create a dataset for each coin, or just the selected coin if one is selected
-    const coinEntries = selectedCoin 
-      ? Object.entries(processedData).filter(([coin]) => coin === selectedCoin)
-      : Object.entries(processedData);
-    
-    return {
-      labels: labels.map((timestamp: string) => formatTimestamp(timestamp)),
-      datasets: coinEntries.map(([coin, data], index) => ({
-        label: coin,
-        data: data.prices,
-        fill: false,
-        borderColor: `hsl(${index * 30 % 360}, 70%, 50%)`, // Use HSL colors based on index
-        backgroundColor: `hsla(${index * 30 % 360}, 70%, 50%, 0.2)`,
-        borderWidth: 2,
-        pointRadius: 0,
-        pointHoverRadius: 4,
-        tension: 0.1
-      }))
-    };
-  }, [processedData, selectedCoin, formatTimestamp]);
+  // Chart configuration and chart data preparation removed - not needed for table-only view
 
   if (loading) {
     return (
@@ -359,13 +257,7 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
             ))}
           </div>
           
-          {/* View Mode Toggle */}
-          <button 
-            onClick={toggleViewMode}
-            className="px-3 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-md hover:bg-gray-700"
-          >
-            {viewMode === 'chart' ? 'Show Table' : 'Show Chart'}
-          </button>
+          {/* View Mode Toggle removed - table only */}
         </div>
       </div>
 
@@ -393,64 +285,9 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
             ))}
           </div>
           
-          {/* Latest Prices */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {Object.keys(processedData).map((coin) => {
-              const coinData = processedData[coin];
-              if (!coinData || coinData.prices.length === 0) return null;
-              
-              // Get the latest price (should be first in the array)
-              const latestPrice = coinData.prices[0];
-              const latestTimestamp = coinData.timestamps[0];
-              
-              // Calculate price change if we have at least 2 data points
-              let priceChange = null;
-              if (coinData.prices.length >= 2) {
-                const firstPrice = coinData.prices[coinData.prices.length - 1];
-                priceChange = ((latestPrice - firstPrice) / firstPrice) * 100;
-              }
-              
-              return (
-                <div 
-                  key={coin} 
-                  className={`p-4 rounded-md ${selectedCoin === coin ? 'bg-primary/20 border border-primary/30' : 'bg-gray-800'} cursor-pointer`}
-                  onClick={() => setSelectedCoin(selectedCoin === coin ? null : coin as string)} // Toggle selection
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="text-sm text-gray-400">{coin}</p>
-                    {priceChange !== null && (
-                      <span className={`text-xs font-medium ${priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}%
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xl font-bold">
-                    {formatCurrency(latestPrice)}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    Last updated: {formatTimestamp(latestTimestamp)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
+          {/* Grid cards removed */}
           
-          {viewMode === 'chart' ? (
-            <div className="h-96 w-full bg-gray-800 rounded-md p-4">
-              {Object.keys(processedData).length > 0 ? (
-                <Line 
-                  ref={chartRef}
-                  options={chartOptions} 
-                  data={prepareChartData} 
-                />
-              ) : (
-                <div className="flex justify-center items-center h-full">
-                  <p className="text-gray-400">No data available for chart</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <table className="w-full table-auto">
                 <thead className="bg-gray-800">
                   <tr>
@@ -506,6 +343,32 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
                         )}
                       </div>
                     </th>
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                      onClick={() => handleSortChange('change')}
+                    >
+                      <div className="flex items-center">
+                        <span>Change</span>
+                        {sortColumn === 'change' && (
+                          <span className="ml-1">
+                            {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                    <th 
+                      className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700"
+                      onClick={() => handleSortChange('changePercent')}
+                    >
+                      <div className="flex items-center">
+                        <span>Change %</span>
+                        {sortColumn === 'changePercent' && (
+                          <span className="ml-1">
+                            {sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </span>
+                        )}
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-gray-900 divide-y divide-gray-800">
@@ -540,11 +403,25 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
                         <td className="px-4 py-3 whitespace-nowrap">{data.coin}</td>
                         <td className="px-4 py-3 whitespace-nowrap font-medium">{formatCurrency(data.price)}</td>
                         <td className="px-4 py-3 whitespace-nowrap text-gray-400">{data.source || 'N/A'}</td>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium">
+                          {data.change !== undefined && (
+                            <span className={`${data.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {data.change >= 0 ? '+' : ''}{data.change.toFixed(6)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap font-medium">
+                          {data.changePercent !== undefined && (
+                            <span className={`${data.changePercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {data.changePercent >= 0 ? '+' : ''}{data.changePercent.toFixed(2)}%
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   {relevantPriceData.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                         No price history data available {selectedCoin ? `for ${selectedCoin}` : ''}
                       </td>
                     </tr>
@@ -557,7 +434,6 @@ const PriceHistory: React.FC<PriceHistoryProps> = ({ botId }) => {
                 </div>
               )}
             </div>
-          )}
         </>
       )}
     </div>

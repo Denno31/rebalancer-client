@@ -99,6 +99,10 @@ export interface PricePoint {
   price: number;
   coin: string;
   source?: string;
+  startPrice?: number;
+  endPrice?: number;
+  change?: number;
+  changePercent?: number;
 }
 
 export interface DeviationPoint {

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { Badge } from '../ui/Badge';
+import { Info } from 'lucide-react';
 import { fetchSwapDecisions, SwapDecision } from '@/utils/botApi';
 
 // Using SwapDecision interface from botApi.ts
@@ -69,6 +70,28 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
       return <Badge variant="outline" className="bg-red-900/20 text-red-400 border-red-800">{deviationStr}</Badge>;
     }
   };
+
+  const getGlobalPeakBadge = (globalProtectionTriggered?: boolean) => {
+    if (globalProtectionTriggered) {
+      return <Badge variant="outline" className="bg-yellow-900/20 text-yellow-400 border-yellow-800 ml-1">Protection</Badge>;
+    }
+    return null;
+  };
+  
+  const getGlobalPeakChangeClass = (current: number | null, peak: number) => {
+    if (!current || !peak || peak <= 0) return "";
+    
+    const percentChange = ((current / peak) * 100) - 100;
+    
+    if (percentChange > 0) return "text-green-400";
+    if (percentChange < 0) return "text-red-400";
+    return "text-yellow-400";
+  };
+  
+  const calculatePeakPercentage = (current: number | null, peak: number) => {
+    if (!current || !peak || peak <= 0) return null;
+    return ((current / peak) * 100).toFixed(2) + '%';
+  };
   
   const getSwapStatusBadge = (swapPerformed: boolean) => {
     if (swapPerformed) {
@@ -82,13 +105,19 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
     return new Date(timestamp).toLocaleString();
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value?: number) => {
+    if (value === undefined || value === null) return 'N/A';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 2,
       maximumFractionDigits: 6,
     }).format(value);
+  };
+  
+  const formatPrice = (price?: number) => {
+    if (price === undefined || price === null) return 'N/A';
+    return `$${parseFloat(price.toString()).toFixed(4)}`;
   };
 
   const formatCryptoAmount = (amount: number, coin: string) => {
@@ -130,16 +159,6 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
             <table className="w-full table-auto">
               <thead className="bg-gray-800">
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('id')}>
-                    <div className="flex items-center">
-                      ID
-                      {sortBy === 'id' && (
-                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
-                        </svg>
-                      )}
-                    </div>
-                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('createdAt')}>
                     <div className="flex items-center">
                       Date
@@ -152,7 +171,7 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('fromCoin')}>
                     <div className="flex items-center">
-                      From
+                      From → To
                       {sortBy === 'fromCoin' && (
                         <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
@@ -160,19 +179,25 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
                       )}
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('toCoin')}>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     <div className="flex items-center">
-                      To
-                      {sortBy === 'toCoin' && (
-                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
-                        </svg>
-                      )}
+                      Current Prices
+                      <span className="ml-1 text-gray-500 cursor-help" title="Current prices at time of evaluation">
+                        <Info size={14} />
+                      </span>
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    <div className="flex items-center">
+                      Snapshot Prices
+                      <span className="ml-1 text-gray-500 cursor-help" title="Original snapshot prices used as baseline">
+                        <Info size={14} />
+                      </span>
                     </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-700" onClick={() => handleSortChange('priceDeviationPercent')}>
                     <div className="flex items-center">
-                      Price Deviation
+                      Deviation
                       {sortBy === 'priceDeviationPercent' && (
                         <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sortDirection === 'asc' ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"}></path>
@@ -180,35 +205,82 @@ const SwapDecisions: React.FC<SwapDecisionsProps> = ({ botId }) => {
                       )}
                     </div>
                   </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Threshold</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Unit Gain %</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    <div className="flex items-center">
+                      Global Peak
+                      <span className="ml-1 text-gray-500 cursor-help" title="Global peak value and protection status">
+                        <Info size={14} />
+                      </span>
+                    </div>
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Swap Status</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Reason</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Details</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700 bg-gray-900/50">
                 {swaps.length > 0 ? swaps.map((swap) => (
                   <tr key={swap.id} className="hover:bg-gray-700/50 transition-colors duration-150">
-                    <td className="px-4 py-3 text-sm text-gray-200">{swap.id}</td>
                     <td className="px-4 py-3 text-sm text-gray-200">{formatTimestamp(swap.createdAt)}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-blue-400">{swap.fromCoin}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-green-400">{swap.toCoin}</td>
-                    <td className="px-4 py-3">{getDeviationBadge(swap.priceDeviationPercent, swap.deviationTriggered)}</td>
-                    <td className="px-4 py-3 text-sm text-gray-200">{(swap.priceThreshold).toFixed(2)}%</td>
-                    <td className="px-4 py-3 text-sm text-gray-200">{(swap.unitGainPercent).toFixed(2)}%</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className="font-medium text-blue-400">{swap.fromCoin}</span>
+                      <span className="text-gray-400"> → </span>
+                      <span className="font-medium text-green-400">{swap.toCoin}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-gray-200">
+                        {swap.fromCoin}: {formatPrice(swap.fromCoinPrice)}
+                      </div>
+                      <div className="text-xs text-gray-200">
+                        {swap.toCoin}: {formatPrice(swap.toCoinPrice)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-gray-200">
+                        {swap.fromCoin}: {formatPrice(swap.fromCoinSnapshot)}
+                      </div>
+                      <div className="text-xs text-gray-200">
+                        {swap.toCoin}: {formatPrice(swap.toCoinSnapshot)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div>
+                        {getDeviationBadge(swap.priceDeviationPercent, swap.deviationTriggered)}
+                      </div>
+                      <div className="text-xs mt-1 text-gray-300">
+                        Threshold: {(swap.priceThreshold).toFixed(2)}%
+                      </div>
+                      <div className="text-xs mt-1 text-gray-300">
+                        Gain: {(swap.unitGainPercent).toFixed(2)}%
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="text-xs text-gray-200">
+                        Peak: {typeof swap.globalPeakValue === 'number' ? parseFloat(swap.globalPeakValue.toString()).toFixed(2) : 'N/A'}
+                      </div>
+                      <div className="text-xs text-gray-200">
+                        Current: {typeof swap.currentGlobalPeakValue === 'number' ? parseFloat(swap.currentGlobalPeakValue.toString()).toFixed(2) : 'N/A'}
+                      </div>
+                      {swap.globalPeakValue > 0 && swap.currentGlobalPeakValue !== null && (
+                        <div className="text-xs mt-1">
+                          <span className={getGlobalPeakChangeClass(swap.currentGlobalPeakValue, swap.globalPeakValue)}>
+                            {calculatePeakPercentage(swap.currentGlobalPeakValue, swap.globalPeakValue)}
+                          </span>
+                          {getGlobalPeakBadge(swap.globalProtectionTriggered)}
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-3">{getSwapStatusBadge(swap.swapPerformed)}</td>
                     <td className="px-4 py-3 text-sm text-gray-200">{swap.reason}</td>
                     <td className="px-4 py-3">
-                      <div className="text-xs">
-                        {swap.tradeId ? (
-                          <span className="text-blue-400">Trade ID: {swap.tradeId}</span>
-                        ) : (
-                          <span className="text-gray-400">No trade performed</span>
-                        )}
-                      </div>
-                      <div className="text-xs mt-1">
-                        <span className="text-gray-400">ETH Value: {formatCurrency(swap.ethEquivalentValue)}</span>
+                      <div className="text-xs text-gray-200">{swap.id}</div>
+                      {swap.tradeId && (
+                        <div className="text-xs text-blue-400 mt-1">
+                          Trade: {swap.tradeId}
+                        </div>
+                      )}
+                      <div className="text-xs mt-1 text-gray-400">
+                        ETH: {formatCurrency(swap.ethEquivalentValue)}
                       </div>
                     </td>
                   </tr>
