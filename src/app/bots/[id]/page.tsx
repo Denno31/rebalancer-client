@@ -419,7 +419,7 @@ export default function BotDetailPage() {
               <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-4">
                 <h3 className="text-lg font-semibold mb-3">Quick Actions</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <button
+                  {/* <button
                     className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
                     onClick={() => {
                       const stablecoin = window.confirm('Choose a stablecoin:\n- OK for USDT\n- Cancel for USDC') ? 'USDT' : 'USDC';
@@ -443,7 +443,7 @@ export default function BotDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                     Sell Current Coin
-                  </button>
+                  </button> */}
                   
                   <button
                     className="px-4 py-2 bg-[#f0b90b] hover:bg-[#f0b90b]/80 text-black rounded-md flex items-center justify-center"
@@ -609,7 +609,7 @@ export default function BotDetailPage() {
 
                 <div className="bg-[#1E2329] border border-[#2A2E37] rounded-lg shadow-md p-6 h-full">
                   <div className="grid grid-cols-1 gap-4">
-                    <button
+                    {/* <button
                       className="px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center justify-center"
                       onClick={() => {
                         const stablecoin = window.confirm('Choose a stablecoin:\n- OK for USDT\n- Cancel for USDC') ? 'USDT' : 'USDC';
@@ -631,7 +631,7 @@ export default function BotDetailPage() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                       </svg>
                       Sell Current Coin to Stablecoin
-                    </button>
+                    </button> */}
                     
                     <button
                       className="px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-md flex items-center justify-center"
