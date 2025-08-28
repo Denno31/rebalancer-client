@@ -346,6 +346,28 @@ const EditBotForm: React.FC<EditBotFormProps> = ({ botId, onSubmit }) => {
               </p>
             </div>
             
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="preferredStablecoin">
+                Preferred Stablecoin
+              </label>
+              <select
+                id="preferredStablecoin"
+                name="preferredStablecoin"
+                value={formData.preferredStablecoin}
+                onChange={handleChange}
+                className="w-full p-2 rounded-md border border-gray-600 bg-gray-700 text-white"
+              >
+                <option value="USDT">USDT (Tether)</option>
+                <option value="USDC">USDC (USD Coin)</option>
+                <option value="BUSD">BUSD (Binance USD)</option>
+                <option value="DAI">DAI</option>
+                <option value="TUSD">TUSD (True USD)</option>
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Stablecoin used for valuation and allocation calculations
+              </p>
+            </div>
+            
             {/* Take Profit Toggle */}
             <div className="flex items-center mb-4">
               <input
