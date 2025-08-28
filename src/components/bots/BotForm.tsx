@@ -33,6 +33,7 @@ interface FormData {
   accountId: string;
   enabled: boolean;
   useTakeProfit: boolean;
+  preferredStablecoin: string;
 }
 
 export default function BotForm() {
@@ -50,6 +51,7 @@ export default function BotForm() {
     accountId: '',
     enabled: true,
     useTakeProfit: false,
+    preferredStablecoin: 'USDT',
   });
 
   // UI state
@@ -189,6 +191,7 @@ export default function BotForm() {
         accountId: formData.accountId,
         useTakeProfit: formData.useTakeProfit,
         takeProfitPercentage: formData.useTakeProfit && formData.takeProfitPercentage ? parseFloat(formData.takeProfitPercentage) : undefined,
+        preferredStablecoin: formData.preferredStablecoin,
         // Add budget field for backend compatibility
         manualBudgetAmount: parseFloat(formData.budget)
       };
@@ -223,6 +226,7 @@ export default function BotForm() {
         accountId: '',
         enabled: true,
         useTakeProfit: false,
+        preferredStablecoin: 'USDT',
       });
       setSelectedCoins([]);
       
@@ -392,6 +396,29 @@ export default function BotForm() {
               </div>
               <p className="text-sm text-gray-400 mt-1">
                 Minimum price change required before executing a trade
+              </p>
+            </div>
+            
+            {/* Preferred Stablecoin */}
+            <div>
+              <label htmlFor="preferredStablecoin" className="block text-sm font-medium text-gray-300">
+                Preferred Stablecoin
+              </label>
+              <select
+                id="preferredStablecoin"
+                name="preferredStablecoin"
+                value={formData.preferredStablecoin}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="USDT">USDT (Tether)</option>
+                <option value="USDC">USDC (USD Coin)</option>
+                <option value="BUSD">BUSD (Binance USD)</option>
+                <option value="DAI">DAI</option>
+                <option value="TUSD">TUSD (True USD)</option>
+              </select>
+              <p className="text-sm text-gray-400 mt-1">
+                Stablecoin used for valuation and allocation calculations
               </p>
             </div>
             

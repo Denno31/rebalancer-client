@@ -10,6 +10,7 @@ export type Bot = BotType;
 export interface LoginResponse {
   access_token: string;
   token_type: string;
+  username?: string;
 }
 
 export interface RegistrationResponse {
@@ -57,7 +58,15 @@ export async function login(username: string, password: string): Promise<LoginRe
 
   const data = await response.json();
   localStorage.setItem('token', data.access_token);
-  return data;
+  
+  // Store username in localStorage for display in dashboard
+  localStorage.setItem('username', username);
+  
+  // Add username to the response data
+  return {
+    ...data,
+    username
+  };
 }
 
 export async function register(email: string, username: string, password: string): Promise<RegistrationResponse> {
@@ -73,12 +82,19 @@ export async function register(email: string, username: string, password: string
     const error = await response.json();
     throw new Error(error.detail || 'Registration failed');
   }
-
-  return response.json();
+  
+  const data = await response.json();
+  
+  // Store username in localStorage after successful registration
+  // (although typically users will still need to login after registration)
+  localStorage.setItem('username', username);
+  
+  return data;
 }
 
 export function logout(): void {
   localStorage.removeItem('token');
+  localStorage.removeItem('username');
 }
 
 // Helper function to get auth header
