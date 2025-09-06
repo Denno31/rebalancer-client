@@ -11,16 +11,8 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 // Extend DeviationPoint to include snapshot data
 interface EnhancedDeviationPoint extends DeviationPoint {
-  baseSnapshot?: {
-    initialPrice: number;
-    unitsHeld: number;
-    snapshotTimestamp: string;
-  };
-  targetSnapshot?: {
-    initialPrice: number;
-    unitsHeld: number;
-    snapshotTimestamp: string;
-  };
+  baseCoinSnapshot?: number;
+  targetCoinSnapshot?: number;
 }
 
 interface DeviationChartProps {
@@ -45,8 +37,8 @@ interface LatestCoinDeviation {
   prices?: {
     [targetCoin: string]: PriceData;
   };
-  baseSnapshot?: SnapshotData;
-  targetSnapshot?: SnapshotData;
+  baseCoinSnapshot?: number;
+  targetCoinSnapshot?: number;
   [targetCoin: string]: number | null | object | undefined;
 }
 
@@ -60,6 +52,18 @@ interface DeviationDataResponse {
   totalCount?: number;
   page?: number;
   limit?: number;
+  deviations?: Array<{
+    id: number;
+    botId: number;
+    baseCoin: string;
+    targetCoin: string;
+    basePrice: number;
+    targetPrice: number;
+    deviationPercent: number;
+    timestamp: string;
+    baseCoinSnapshot: number;
+    targetCoinSnapshot: number;
+  }>;
 }
 
 const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
@@ -84,8 +88,8 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
     targetPrice: number;
     deviationPercent: number;
     timestamp?: string;
-    baseSnapshot?: SnapshotData | null;
-    targetSnapshot?: SnapshotData | null;
+    baseCoinSnapshot?: number | null;
+    targetCoinSnapshot?: number | null;
   }
   
   // Table data state
@@ -406,43 +410,84 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
     targetPrice: number;
     deviationPercent: number;
     timestamp?: string;
-    baseSnapshot?: SnapshotData | null;
-    targetSnapshot?: SnapshotData | null;
+    baseCoinSnapshot?: number | null;
+    targetCoinSnapshot?: number | null;
   }
 
   // Process deviation data when it changes
   useEffect(() => {
-    if (deviationData?.success && deviationData.latestDeviations && deviationData.timeSeriesData) {
+    if (deviationData?.success && deviationData.deviations && deviationData.deviations.length > 0) {
+      // Use the new deviations array from the API response directly
+      const { deviations, coins } = deviationData;
+      
+      // Get valid coin list from the API response
+      const coinList = coins || [];
+      
+      // Generate pairs to show in the table directly from deviations array
+      const pairs: TableDataItem[] = [];
+      
+      // Transform the deviations array into our table data format
+      deviations.forEach(item => {
+        const { baseCoin, targetCoin, basePrice, targetPrice, deviationPercent, timestamp, baseCoinSnapshot, targetCoinSnapshot } = item;
+        
+        // Filter by selectedBaseCoin if specified
+        if (!selectedBaseCoin || baseCoin === selectedBaseCoin) {
+          const pair = `${baseCoin}/${targetCoin}`;
+          
+          const pairData: TableDataItem = {
+            pair,
+            baseCoin,
+            targetCoin,
+            basePrice,
+            targetPrice,
+            deviationPercent,
+            timestamp,
+            baseCoinSnapshot,
+            targetCoinSnapshot
+          };
+          
+          pairs.push(pairData);
+        }
+      });
+      
+      // Sort pairs by absolute deviation (highest first)
+      const sortedPairs = pairs.sort((a, b) => Math.abs(b.deviationPercent) - Math.abs(a.deviationPercent));
+      
+      // Only show top 20 pairs to avoid overwhelming the table (matching original component)
+      const topPairs = sortedPairs.slice(0, 20);
+      
+      // Set state with the processed data
+      setTableData(topPairs);
+      
+      console.log('Table data created from deviations array:', topPairs);
+    } else if (deviationData?.success && deviationData.latestDeviations && deviationData.timeSeriesData) {
+      // Fallback to old method if deviations array is not available
+      console.log('Falling back to old method - deviations array not available');
+      
       // Extract data from API response
       const { latestDeviations, timeSeriesData, coins } = deviationData;
       
       // Get valid coin list from the API response
       const coinList = coins || [];
       
-      // Create a map of latest price data from timeSeriesData (exactly as in the old UI)
+      // Create a map of latest price data from timeSeriesData
       const latestPriceData: Record<string, Record<string, { basePrice: number, targetPrice: number }>> = {};
       
       // Extract the latest price data for each pair from timeSeriesData
       Object.entries(timeSeriesData).forEach(([pairKey, dataPoints]) => {
         if (dataPoints && dataPoints.length > 0) {
-          // Get the most recent data point (last element in the array)
           const latestPoint = dataPoints[dataPoints.length - 1];
-          
-          // Extract the coin names and prices
           const { baseCoin, targetCoin, basePrice, targetPrice } = latestPoint;
           
-          // Initialize baseCoin entry if needed
           if (!latestPriceData[baseCoin]) {
             latestPriceData[baseCoin] = {};
           }
           
-          // Store price data
           latestPriceData[baseCoin][targetCoin] = { basePrice, targetPrice };
         }
       });
       
       // Filter coins based on selected base coin if specified
-      // This matches the logic in the original component
       const filteredCoins = selectedBaseCoin 
         ? coinList.filter((coin: string) => coin === selectedBaseCoin || 
             (latestDeviations[selectedBaseCoin] && latestDeviations[selectedBaseCoin][coin] !== null))
@@ -452,7 +497,7 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
       const pairs: TableDataItem[] = [];
       
       if (selectedBaseCoin) {
-        // If a base coin is selected, show all its pairs (matching original component)
+        // If a base coin is selected, show all its pairs
         filteredCoins.forEach((targetCoin: string) => {
           if (selectedBaseCoin !== targetCoin && 
               latestDeviations[selectedBaseCoin] && 
@@ -480,7 +525,7 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
           }
         });
       } else {
-        // Otherwise show all pairs with non-null deviations (matching original component)
+        // Otherwise show all pairs with non-null deviations
         filteredCoins.forEach((base: string) => {
           filteredCoins.forEach((target: string) => {
             if (base !== target && 
@@ -514,10 +559,9 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
       // Sort pairs by absolute deviation (highest first)
       const sortedPairs = pairs.sort((a, b) => Math.abs(b.deviationPercent) - Math.abs(a.deviationPercent));
       
-      // Only show top 20 pairs to avoid overwhelming the table (matching original component)
+      // Only show top 20 pairs to avoid overwhelming the table
       const topPairs = sortedPairs.slice(0, 20);
       
-      // Set state with the processed data
       setTableData(topPairs);
     }
   }, [deviationData, selectedBaseCoin]);
@@ -564,16 +608,12 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
           <td className="px-4 py-2 text-right">
             {item.targetPrice ? formatPrice(item.targetPrice) : '–'}
           </td>
-          {/* <td className="py-3 px-4">
-            {item.baseSnapshot?.initialPrice ? 
-              `$${parseFloat(item.baseSnapshot?.initialPrice).toFixed(4)}` : 
-              '–'}
+          <td className="px-4 py-2 text-right">
+            {item.baseCoinSnapshot ? formatPrice(item.baseCoinSnapshot) : '–'}
           </td>
-          <td className="py-3 px-4">
-            {item.baseSnapshot?.unitsHeld ? 
-              parseFloat(item.baseSnapshot.unitsHeld).toFixed(4) : 
-              '–'}
-          </td> */}
+          <td className="px-4 py-2 text-right">
+            {item.targetCoinSnapshot ? formatPrice(item.targetCoinSnapshot) : '–'}
+          </td>
         </tr>
       ))
     ) : (
@@ -760,8 +800,8 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
                 <th className="py-3 px-4 text-gray-400 font-medium">Deviation %</th>
                 <th className="py-3 px-4 text-gray-400 font-medium">Base Price</th>
                 <th className="py-3 px-4 text-gray-400 font-medium">Target Price</th>
-                <th className="py-3 px-4 text-gray-400 font-medium">Initial Base Price</th>
-                <th className="py-3 px-4 text-gray-400 font-medium">Units Held</th>
+                <th className="py-3 px-4 text-gray-400 font-medium">Base Snapshot</th>
+                <th className="py-3 px-4 text-gray-400 font-medium">Target Snapshot</th>
               </tr>
               <tr>
                 <th colSpan={7} className="py-2 px-4">
@@ -909,16 +949,7 @@ const DeviationChart: React.FC<DeviationChartProps> = ({ botId }) => {
                         </div>
                       </div>
                       
-                      {item.baseSnapshot?.initialPrice && (
-                        <div className="p-2 rounded-md bg-gray-700">
-                          <div className="flex justify-between">
-                            <span className="text-sm">Initial Price</span>
-                            <span className="text-sm font-medium">
-                              {/* ${parseFloat(item.baseSnapshot.initialPrice).toFixed(4)} */}
-                            </span>
-                          </div>
-                        </div>
-                      )}
+                      {/* Snapshot sections removed as we're using the new properties directly in the table */}
                     </div>
                   </div>
                 );
